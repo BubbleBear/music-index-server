@@ -120,8 +120,8 @@ async function getAlbumInfo(albumMid) {
     }
 }
 
-const parallelSize = 100;
-const companyQuant = 1e5 + 10;
+const parallelSize = process.argv[2] || 100;
+const companyQuant = process.argv[3] || 1e5 + 10;
 
 const scheduler = new Scheduler({
     parallelSize,

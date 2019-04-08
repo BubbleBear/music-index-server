@@ -8,6 +8,8 @@ import router from './router';
 
 const app = new Koa();
 
+(app as any).childProcessMap = {};
+
 app
     .use(serve(path.join(__dirname, '../public')))
     .use(bodyparser())

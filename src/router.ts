@@ -1,4 +1,6 @@
 import * as stream from 'stream';
+import * as cp from 'child_process';
+import * as path from 'path';
 
 import Router from 'koa-router';
 
@@ -15,7 +17,7 @@ router.get('/company/:companyId/detail', async (ctx, next) => {
 
     const embeded = await service.findEmbededAlbums(companyIds);
 
-    ctx.body = embeded[0];
+    ctx.body = embeded[0] || {};
 
     next();
 });
@@ -69,6 +71,47 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
     rs.push(null);
 
     ctx.body = rs;
+
+    next();
+});
+
+router.get('/crawl', async (ctx, next) => {
+    const query = ctx.query;
+
+    const app: any = ctx.app;
+
+    const crawler = cp.spawn(
+        'node',
+        [ `${path.join(__dirname, '../scripts/qq_music_crawler.js')}`, query.parallel_size || '10', query.company_quant || '20' ],
+    );
+
+    crawler.stdout.on('data', (chunk) => {
+        chunk && console.log(chunk.toString());
+    })
+
+    crawler.stderr.on('data', (chunk) => {
+        chunk && console.log(chunk.toString());
+    })
+
+    app.childProcessMap.crawler = crawler;
+
+    ctx.body = {
+        success: true,
+    };
+
+    next();
+});
+
+router.get('/terminate_crawling', async (ctx, next) => {
+    const app: any = ctx.app;
+
+    const crawler: cp.ChildProcess = app.childProcessMap.crawler;
+
+    crawler.kill('SIGKILL');
+
+    ctx.body = {
+        success: true,
+    };
 
     next();
 });
