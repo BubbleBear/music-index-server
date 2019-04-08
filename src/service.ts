@@ -1,4 +1,7 @@
 import mongo, { MongoClient, Db } from "mongodb";
+import Redis from 'ioredis';
+
+const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 export default class Service {
     private promise: Promise<MongoClient>;
@@ -7,10 +10,18 @@ export default class Service {
 
     private db!: Db;
 
+    private redis: Redis.Redis;
+
     constructor(options?: any) {
         this.promise = mongo.connect('mongodb://localhost:27017', Object.assign({
             useNewUrlParser: true,
         }, options));
+
+        this.redis = new Redis({
+            host: 'localhost',
+            port: 6379,
+            dropBufferSupport: true,
+        });
     }
 
     async sync() {
@@ -85,6 +96,10 @@ export default class Service {
         });
 
         return companies;
+    }
+
+    async cleanseCrawlerCache() {
+        return await this.redis.del(REDIS_QQ_CRALWER_KEY);
     }
 }
 
