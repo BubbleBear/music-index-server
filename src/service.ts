@@ -93,6 +93,7 @@ export default class Service {
 
         companies.forEach(company => {
             company.albumList = company.albumList.map((album: any) => albumMap[album.album_id]);
+            company.name = company.albumList[0].company;
         });
 
         return companies;
