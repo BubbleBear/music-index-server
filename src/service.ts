@@ -29,7 +29,7 @@ export default class Service {
 
         const companies = await companyCollection.find({
             company_id: {
-                $in: companyIds,
+                $in: companyIds.map(v => Number(v)),
             },
         })
         .project({
@@ -47,7 +47,7 @@ export default class Service {
 
         const albums = await albumCollection.find({
             album_id: {
-                $in: albumIds,
+                $in: albumIds.map(v => Number(v)),
             },
         })
         .project({
