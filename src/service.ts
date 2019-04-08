@@ -122,7 +122,11 @@ export default class Service {
     
         crawler.on('close', async (code) => {
             if (code == 0) {
+                await this.db.createCollection('album');
+
                 const collection = this.db.collection('album_statistics');
+
+                (await collection.indexExists('company_id')) || (await this.db.createIndex('album_statistics', 'company_id'));
 
                 // await collection.insert({
 
@@ -142,17 +146,27 @@ export default class Service {
             return false;
         }
     }
+
+    async test() {
+        const collection = this.db.collection('company');
+
+        const count = await collection.count();
+    }
 }
 
 if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        const r = await service.findEmbededAlbums([64, 30])
+        // const r = await service.findEmbededAlbums([64, 30])
 
-        console.dir(JSON.stringify(r), {
-            depth: null,
-        });
+        // console.dir(JSON.stringify(r), {
+        //     depth: null,
+        // });
+
+        const t = await service.test();
+
+        console.log(t);
 
         await service.client.close();
     }();
