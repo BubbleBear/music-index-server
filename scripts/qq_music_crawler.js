@@ -152,21 +152,22 @@ async function onDone(noMorePages, task) {
     console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
 
     if (!noMorePages) {
-        if (task.page == companyPageTable[task.companyId]) {
-            scheduler.push(task.companyId, task.page + 1);
-        } else {
-            // console.log(0, task.companyId, task.page, companyPageTable[task.companyId])
-        }
+        scheduler.push(task.companyId, task.page + 1);
+        // if (task.page == companyPageTable[task.companyId]) {
+        //     scheduler.push(task.companyId, task.page + 1);
+        // } else {
+        //     console.log('######################', task.companyId, task.page, companyPageTable[task.companyId])
+        // }
     } else {
         await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
 
-        let companyId = task.companyId;
+        // let companyId = task.companyId;
 
-        while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
-            companyId += parallelSize;
-        }
+        // while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
+        //     companyId += parallelSize;
+        // }
 
-        companyId < companyQuant && scheduler.push(companyId);
+        // companyId < companyQuant && scheduler.push(companyId);
     }
 }
 
@@ -182,14 +183,6 @@ async function onError(err, task) {
             if (task.page == companyPageTable[task.companyId]) {
                 scheduler.push(task.companyId, task.page + 1);
             }
-
-            let companyId = task.companyId;
-
-            while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
-                companyId += parallelSize;
-            }
-
-            companyId < companyQuant && scheduler.push(companyId);
         }
 
         task.errorCount++;
@@ -201,7 +194,7 @@ async function onError(err, task) {
 async function run() {
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
 
-    for (let i = 1, count = 0; count < parallelSize; i++) {
+    for (let i = 1, count = 0; count < companyQuant; i++) {
         if (visited.includes(i.toString()) === false) {
             scheduler.push(i);
             count++;
