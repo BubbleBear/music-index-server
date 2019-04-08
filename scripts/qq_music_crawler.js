@@ -162,11 +162,11 @@ async function onDone(noMorePages, task) {
 
         let companyId = task.companyId;
 
-        while (task.companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
+        while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
             companyId += parallelSize;
         }
 
-        task.companyId < companyQuant && scheduler.push(companyId);
+        companyId < companyQuant && scheduler.push(companyId);
     }
 }
 
@@ -182,6 +182,14 @@ async function onError(err, task) {
             if (task.page == companyPageTable[task.companyId]) {
                 scheduler.push(task.companyId, task.page + 1);
             }
+
+            let companyId = task.companyId;
+
+            while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
+                companyId += parallelSize;
+            }
+
+            companyId < companyQuant && scheduler.push(companyId);
         }
 
         task.errorCount++;
