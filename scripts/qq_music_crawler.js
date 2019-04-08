@@ -194,7 +194,7 @@ async function onError(err, task) {
 async function run() {
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
 
-    for (let i = 1, count = 0; count < companyQuant; i++) {
+    for (let i = 1; i < companyQuant; i++) {
         if (visited.includes(i.toString()) === false) {
             scheduler.push(i);
             count++;
@@ -203,6 +203,9 @@ async function run() {
 
     await scheduler.dispatch();
 
+    client.close()
+    redis.disconnect();
+
     return;
 }
 
@@ -210,8 +213,5 @@ if (require.main === module) {
     !async function() {
         await getDB();
         await run();
-
-        client.close()
-        redis.disconnect();
     }()
 }

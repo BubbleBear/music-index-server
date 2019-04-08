@@ -1,6 +1,4 @@
 import * as stream from 'stream';
-import * as cp from 'child_process';
-import * as path from 'path';
 
 import Router from 'koa-router';
 
@@ -80,18 +78,7 @@ router.get('/crawl', async (ctx, next) => {
 
     const app: any = ctx.app;
 
-    const crawler = cp.spawn(
-        'node',
-        [ `${path.join(__dirname, '../scripts/qq_music_crawler.js')}`, query.parallel_size || '10', query.company_quant || '20' ],
-    );
-
-    crawler.stdout.on('data', (chunk) => {
-        chunk && console.log(chunk.toString());
-    })
-
-    crawler.stderr.on('data', (chunk) => {
-        chunk && console.log(chunk.toString());
-    })
+    const crawler = service.crawl(query.parallel_size, query.company_quant);
 
     app.childProcessMap.crawler = crawler;
 
@@ -105,12 +92,10 @@ router.get('/crawl', async (ctx, next) => {
 router.get('/terminate_crawling', async (ctx, next) => {
     const app: any = ctx.app;
 
-    const crawler: cp.ChildProcess = app.childProcessMap.crawler;
-
-    crawler.kill('SIGKILL');
+    const crawler = app.childProcessMap.crawler;
 
     ctx.body = {
-        success: true,
+        success: service.kill(crawler),
     };
 
     next();

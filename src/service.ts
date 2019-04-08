@@ -1,3 +1,6 @@
+import * as cp from 'child_process';
+import * as path from 'path';
+
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 
@@ -101,6 +104,43 @@ export default class Service {
 
     async cleanseCrawlerCache() {
         return await this.redis.del(REDIS_QQ_CRALWER_KEY);
+    }
+
+    crawl(parallelSize: number = 5, companyQuant: number = 10) {
+        const crawler = cp.spawn(
+            'node',
+            [ `${path.join(__dirname, '../scripts/qq_music_crawler.js')}`, parallelSize.toString(), companyQuant.toString() ],
+        );
+    
+        crawler.stdout.on('data', (chunk) => {
+            chunk && console.log(chunk.toString());
+        })
+    
+        crawler.stderr.on('data', (chunk) => {
+            chunk && console.log(chunk.toString());
+        })
+    
+        crawler.on('close', async (code) => {
+            if (code == 0) {
+                const collection = this.db.collection('album_statistics');
+
+                // await collection.insert({
+
+                // });
+            }
+        });
+
+        return crawler;
+    }
+
+    kill(process: cp.ChildProcess) {
+        try {
+            const result = process.kill('SIGKILL');
+
+            return result;
+        } catch (e) {
+            return false;
+        }
     }
 }
 
