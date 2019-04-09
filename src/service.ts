@@ -3,6 +3,7 @@ import * as path from 'path';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
+import moment from 'moment';
 
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
@@ -133,7 +134,7 @@ export default class Service {
                     acc += cur.total;
                     return acc;
                 }, 0),
-                createdAt: new Date(),
+                createdAt: moment().unix(),
             });
         }
 

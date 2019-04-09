@@ -1,6 +1,7 @@
 import * as stream from 'stream';
 
 import Router from 'koa-router';
+import moment from 'moment';
 
 import Service from './service';
 import * as utils from './utils';
@@ -72,6 +73,11 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
     rs.push(csv);
     rs.push(null);
 
+    ctx.set({
+        'Content-Type': 'application/octet-stream;charset=utf8',
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库详细查询')}_${moment().format('YYYY-MM-DD')}.csv`,
+    });
+
     ctx.body = rs;
 
     return await next();
@@ -82,8 +88,8 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const conditions = {
         createdAt: {
-            $gt: new Date(query.start_date),
-            $lte: new Date(query.end_date + ' 23:59:59'),
+            $gt: query.start_date,
+            $lte: query.end_date,
         },
     };
 
@@ -103,6 +109,11 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     rs.push(csv);
     rs.push(null);
+
+    ctx.set({
+        'Content-Type': 'application/octet-stream;charset=utf8',
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库量统计')}_${moment().format('YYYY-MM-DD')}.csv`,
+    });
 
     ctx.body = rs;
 
