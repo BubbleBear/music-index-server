@@ -88,12 +88,12 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const conditions = {
         createdAt: {
-            $gt: query.start_date,
-            $lte: query.end_date,
+            $gt: Number(query.start_date),
+            $lte: Number(query.end_date),
         },
     };
 
-    const result = await service.findCompanyStatistics(conditions);
+    const result = await service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
 
     const csv = utils.list2csv(result, {
         company_id: '唱片公司ID',

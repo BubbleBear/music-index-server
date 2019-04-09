@@ -150,6 +150,8 @@ export default class Service {
     async findCompanyStatistics(conditions: any = {}, projection: any = { _id: 0 }) {
         await this.sync();
 
+        console.log(conditions)
+
         const collection = this.db.collection('company_statistics');
 
         const statistics = await collection
