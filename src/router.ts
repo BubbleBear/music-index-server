@@ -17,7 +17,7 @@ router.get('/company/:companyId/detail', async (ctx, next) => {
 
     ctx.body = embeded[0] || {};
 
-    next();
+    return await next();
 });
 
 router.post('/cleanse_crawler_cache', async (ctx, next) => {
@@ -25,7 +25,7 @@ router.post('/cleanse_crawler_cache', async (ctx, next) => {
         success: await service.cleanseCrawlerCache(),
     };
 
-    next();
+    return await next();
 });
 
 router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
@@ -74,7 +74,24 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
 
     ctx.body = rs;
 
-    next();
+    return await next();
+});
+
+router.get('/csv/company_statistics', async (ctx, next) => {
+    const query = ctx.query;
+
+    const conditions = {
+        createdAt: {
+            $gt: new Date(query.start_date),
+            $lte: new Date(query.end_date + ' 23:59:59'),
+        },
+    };
+
+    const result = await service.findCompanyStatistics(conditions);
+
+    ctx.body = result;
+
+    return await next();
 });
 
 router.post('/crawl', async (ctx, next) => {
@@ -90,7 +107,7 @@ router.post('/crawl', async (ctx, next) => {
         success: true,
     };
 
-    next();
+    return await next();
 });
 
 router.post('/terminate_crawling', async (ctx, next) => {
@@ -102,7 +119,7 @@ router.post('/terminate_crawling', async (ctx, next) => {
         success: service.kill(crawler),
     };
 
-    next();
+    return await next();
 });
 
 export default router;

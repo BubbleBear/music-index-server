@@ -39,9 +39,9 @@ export default class Service {
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
         await this.sync();
 
-        const companyCollection = this.db.collection('company');
+        const collection = this.db.collection('company');
 
-        const companies = await companyCollection.find({
+        const companies = await collection.find({
             company_id: {
                 $in: companyIds.map(v => Number(v)),
             },
@@ -55,9 +55,9 @@ export default class Service {
     async findAlbums(albumIds: number[], projection: any = { _id: 0 }) {
         await this.sync();
 
-        const albumCollection = this.db.collection('album');
+        const collection = this.db.collection('album');
 
-        const albums = await albumCollection.find({
+        const albums = await collection.find({
             album_id: {
                 $in: albumIds.map(v => Number(v)),
             },
@@ -145,6 +145,20 @@ export default class Service {
         return;
     }
 
+    async findCompanyStatistics(conditions: any = {}, projection: any = { _id: 0 }) {
+        await this.sync();
+        console.log(conditions)
+
+        const collection = this.db.collection('company_statistics');
+
+        const statistics = await collection
+            .find(conditions)
+            .project(projection)
+            .toArray();
+
+        return statistics;
+    }
+
     crawl(parallelSize: number = 5, companyQuant: number = 10) {
         const crawler = cp.spawn(
             'node',
@@ -182,6 +196,8 @@ export default class Service {
 if (require.main === module) {
     !async function() {
         const service = new Service();
+
+        // await service.createCompanyStatistics();
 
         await service.client.close();
         service.redis.disconnect();
