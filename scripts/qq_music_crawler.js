@@ -206,8 +206,13 @@ async function onError(err, task) {
 async function run() {
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
 
+    const visitedMap = visited.reduce((acc, cur) => {
+        acc[cur] = true;
+        return acc;
+    }, {});
+
     for (let i = 1; i < companyQuant; i++) {
-        if (visited.includes(i.toString()) === false) {
+        if (!visitedMap[i]) {
             scheduler.push(i);
         }
     }

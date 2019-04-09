@@ -7,6 +7,8 @@ import moment from 'moment';
 
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
+const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
+
 export default class Service {
     client!: MongoClient;
 
@@ -117,6 +119,8 @@ export default class Service {
 
         const bulk = [];
 
+        const date1 = moment().format('YYYY-MM-DD');
+
         while (await companyCursor.hasNext()) {
             const company = await companyCursor.next();
 
@@ -143,7 +147,11 @@ export default class Service {
             })),
         );
 
-        return;
+        const date2 = moment().format('YYYY-MM-DD');
+
+        await this.redis.sadd(REDIS_QQ_STATISTICS_KEY, date1, date2);
+
+        return true;
     }
 
     async findCompanyStatistics(conditions: any = {}, projection: any = { _id: 0 }) {
@@ -157,6 +165,14 @@ export default class Service {
             .toArray();
 
         return statistics;
+    }
+
+    async getStatisticsDates() {
+        await this.sync();
+
+        const dates = await this.redis.smembers(REDIS_QQ_STATISTICS_KEY);
+
+        return dates;
     }
 
     crawl(parallelSize: number = 5, companyQuant: number = 10) {

@@ -16,7 +16,10 @@ router.get('/company/:companyId/detail', async (ctx, next) => {
 
     const embeded = await service.findEmbededAlbums(companyIds);
 
-    ctx.body = embeded[0] || {};
+    ctx.body = {
+        success: true,
+        data: embeded[0] || {},
+    };
 
     return await next();
 });
@@ -74,9 +77,11 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
     rs.push(csv);
     rs.push(null);
 
+    const appendix = moment().format('YYYY-MM-DD');
+
     ctx.set({
         'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库详细查询_' + company.name)}.csv`,
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库详细查询_' + company.name)}_${appendix}.csv`,
     });
 
     ctx.body = rs;
@@ -117,9 +122,13 @@ router.get('/csv/company_statistics', async (ctx, next) => {
     rs.push(csv);
     rs.push(null);
 
+    const appendix = query.start_date
+        ? moment.unix(query.start_date).format('YYYY-MM-DD')
+        : moment().format('YYYY-MM-DD');
+
     ctx.set({
         'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库量统计')}_${moment.unix(query.start_date).format('YYYY-MM-DD')}.csv`,
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库量统计')}_${appendix}.csv`,
     });
 
     ctx.body = rs;
@@ -155,4 +164,29 @@ router.post('/terminate_crawling', async (ctx, next) => {
     return await next();
 });
 
+router.post('/company_statistics', async (ctx, next) => {
+    const result = await service.createCompanyStatistics();
+
+    ctx.body = {
+        success: Boolean(result),
+    };
+
+    return await next();
+});
+
+router.get('/company_statistics/dates', async (ctx, next) => {
+    const dates = await service.getStatisticsDates();
+
+    ctx.body = {
+        success: true,
+        dates,
+    };
+
+    return await next();
+});
+
 export default router;
+
+if (require.main === module) {
+    console.log(moment.unix(undefined!).format())
+}
