@@ -96,13 +96,18 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const result = await service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
 
-    const csv = utils.list2csv(result, {
-        company_id: '唱片公司ID',
-        company_name: '唱片公司',
-        album_count: '专辑数',
-        song_count: '歌曲数',
-        createdAt: '分析日期',
-    });
+    const csv = utils.list2csv(
+        result.map(v => {
+            v.createdAt = moment.unix(v.createdAt).format('YYYY-MM-DD');
+            return v;
+        }), {
+            company_id: '唱片公司ID',
+            company_name: '唱片公司',
+            album_count: '专辑数',
+            song_count: '歌曲数',
+            createdAt: '分析日期',
+        }
+    );
 
     const rs = new stream.Readable({
         read() {},

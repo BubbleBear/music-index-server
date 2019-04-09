@@ -93,7 +93,6 @@ export default class Service {
 
         companies.forEach(company => {
             company.albumList = company.albumList.map((album: any) => albumMap[album.album_id]);
-            company.name = company.albumList[0].company;
         });
 
         return companies;
@@ -128,7 +127,7 @@ export default class Service {
 
             bulk.push({
                 company_id: company.company_id,
-                company_name: albums[0] && albums[0].company,
+                company_name: company.name,
                 album_count: company.albumList.length,
                 song_count: albums.reduce((acc, cur) => {
                     acc += cur.total;
@@ -198,7 +197,7 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        // await service.createCompanyStatistics();
+        await service.createCompanyStatistics();
 
         await service.client.close();
         service.redis.disconnect();

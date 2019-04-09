@@ -62,27 +62,39 @@ async function bulkInsertAlbum(albums) {
     return upserts;
 }
 
+async function getCompanyDetail(companyId) {
+    const companyUrl = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=5381&format=json&inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&type=company&companyId=${companyId}&is_show=1`;
+
+    const result = await axios.get(companyUrl);
+
+    const detail = result.data.data.company;
+
+    return detail;
+}
+
 async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
-    const url = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
+    const albumUrl = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
 
     logger.info({
         desc: 'request',
-        url,
+        albumUrl,
         pendingLength: scheduler.pendingTasks.length,
         runningLength: scheduler.runningTasks.length,
     });
 
-    const result = await axios.get(url);
+    const result = await axios.get(albumUrl);
 
     if (!result.data || !result.data.data || !result.data.data.album) {
         // to do add logger here
         logger.warn({
             desc: 'illegal response',
-            url,
+            albumUrl,
             response: result.data,
         });
         return true;
     }
+
+    const companyDetail = await getCompanyDetail(companyId);
 
     const albumList = result.data.data.album.albumList.map(a => ({
         album_id: a.Falbum_id,
@@ -90,13 +102,13 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
         album_name: a.Falbum_name,
     }));
 
+    companyDetail.company_id = companyId;
+    companyDetail.albumList = albumList;
+
     await db.collection('company').updateOne(
         { company_id: companyId },
         {
-            $set: {
-                company_id: companyId,
-                albumList,
-            },
+            $set: companyDetail,
         },
         {
             upsert: true,
