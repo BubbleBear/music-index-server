@@ -120,15 +120,16 @@ export default class Service {
         while (await companyCursor.hasNext()) {
             const company = await companyCursor.next();
 
-            const counts = await this.findAlbums(
+            const albums = await this.findAlbums(
                 company.albumList.map((album: any) => album.album_id),
-                { _id: 0, total: 1 },
+                { _id: 0, total: 1, company: 1 },
             );
 
             bulk.push({
                 company_id: company.company_id,
+                company_name: albums[0] && albums[0].company,
                 album_count: company.albumList.length,
-                song_count: counts.reduce((acc, cur) => {
+                song_count: albums.reduce((acc, cur) => {
                     acc += cur.total;
                     return acc;
                 }, 0),
@@ -147,7 +148,6 @@ export default class Service {
 
     async findCompanyStatistics(conditions: any = {}, projection: any = { _id: 0 }) {
         await this.sync();
-        console.log(conditions)
 
         const collection = this.db.collection('company_statistics');
 
