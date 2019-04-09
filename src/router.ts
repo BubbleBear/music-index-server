@@ -70,6 +70,7 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
         read() {},
     });
 
+    rs.push('\ufeff');
     rs.push(csv);
     rs.push(null);
 
@@ -107,6 +108,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         read() {},
     });
 
+    rs.push('\ufeff');
     rs.push(csv);
     rs.push(null);
 
