@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8" />
+  <title>数据获取</title>
+  <meta name="renderer" content="webkit">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <style>
+    html {
+      font-family: "Helvetica Neue", Helvetica, PingFang, "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
+    }
+
+    body {
+      -webkit-overflow-scrolling: touch;
+      position: relative;
+    }
+
+    h1,
+    h2,
+    h3,
+    div,
+    ul,
+    li,
+    dl,
+    dt,
+    dd,
+    button,
+    input,
+    header,
+    main,
+    footer,
+    p,
+    button,
+    body {
+      padding: 0;
+      margin: 0;
+      -webkit-overflow-scrolling: touch;
+      outline: none;
+    }
+
+    header {
+      text-align: center;
+      height: 60px;
+      line-height: 60px;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .main-wrap {
+      display: flex;
+      justify-content: space-around
+    }
+
+    .main-wrap>div {
+      align-items: center;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      padding: 20px 0;
+    }
+
+    .title {
+      font-size: 16px;
+      color: #333;
+      font-weight: bold;
+      margin-bottom: 20px
+    }
+
+    .input-wrap {
+      font-size: 14px;
+      color: #333;
+
+    }
+
+    .input-wrap span {
+      margin-right: 4px;
+    }
+
+    .input-wrap input {
+      height: 28px;
+      width: 160px;
+      line-height: 28px;
+      border-radius: 2px;
+      border: 1px #cdcdcd solid;
+      padding-left: 8px;
+    }
+
+    .left {
+      border-right: 1px #ccc solid;
+    }
+
+    .download {
+      width: 140px;
+      font-size: 14px;
+      height: 30px;
+      font-weight: bold;
+      border: 1px #cdcdcd solid;
+      background: #fcfcfc;
+      border-radius: 4px;
+      margin-top: 40px;
+    }
+
+    .download:hover {
+      opacity: .5;
+    }
+
+    #loading {
+      width: 100%;
+      height: 100vh;
+      position: fixed;
+      display: none;
+      top: 0;
+      left: 0;
+      background: rgba(48, 47, 47, 0.7)
+    }
+
+    #loading svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      margin: auto;
+      width: 60px;
+      height: 60px;
+    }
+  </style>
+</head>
+
+<body>
+  <header>数据表格下载</header>
+  <div class="main-wrap">
+    <div class="left">
+      <div>
+        <div class="title">曲库详情下载</div>
+        <div class="input-wrap">
+          <span>公司ID:</span>
+          <input type="text" id="c-id" placeholder="请输入公司ID并点击下载按钮">
+        </div>
+      </div>
+      <button id="dcb" class="download">查询并下载</button>
+    </div>
+    <div>
+      <div>
+        <div class="title">下载对应日期下的公司统计数据</div>
+        <div class="input-wrap">
+          <span>日期:</span>
+          <input type="date" id="date-ipt">
+        </div>
+      </div>
+      <button class="download" id="ddb">查询并下载</button>
+    </div>
+  </div>
+  <div id="loading">
+    <svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">
+      <g fill="none" fill-rule="evenodd">
+        <g transform="translate(1 1)" stroke-width="2">
+          <circle stroke-opacity=".5" cx="18" cy="18" r="18" />
+          <path d="M36 18c0-9.94-8.06-18-18-18">
+            <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur=".7s"
+              repeatCount="indefinite" />
+          </path>
+        </g>
+      </g>
+    </svg>
+  </div>
+</body>
+<script src="https://cdn.bootcss.com/moment.js/2.24.0/moment.min.js"></script>
+<script>
+  function ctrlLoading(isShow) {
+    if (isShow) document.getElementById('loading').display = 'block'
+    else document.getElementById('loading').display = 'none'
+  }
+  function downloadCsv(url) {
+    var a = document.createElement('a')
+    a.href = url
+    a.click()
+  }
+  function downloadMD() {
+    var ipt = document.getElementById('c-id')
+    if (!ipt.value) return window.alert('请输入公司ID')
+    ctrlLoading(true)
+    downloadCsv('/api/v1/csv/music_index_detail/' + ipt.value)
+    ipt.value = ''
+    ctrlLoading(false)
+  }
+
+  function downloadDL() {
+    if (!document.getElementById('date-ipt').value) return window.alert('请选择日期')
+    var start = window.moment(document.getElementById('date-ipt').value)
+    var end = window.moment(start).endOf('day')
+    ctrlLoading(true)
+    downloadCsv('/api/v1/csv/company_statistics?start_date=' + start.unix() + '&end_date=' + end.unix())
+    ctrlLoading(false)
+  }
+  document.getElementById('dcb').onclick = downloadMD
+  document.getElementById('ddb').onclick = downloadDL
+</script>
+
+</html>

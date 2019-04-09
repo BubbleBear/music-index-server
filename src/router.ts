@@ -76,7 +76,7 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
 
     ctx.set({
         'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库详细查询')}_${moment().format('YYYY-MM-DD')}.csv`,
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库详细查询_' + company.name)}.csv`,
     });
 
     ctx.body = rs;
@@ -114,7 +114,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     ctx.set({
         'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库量统计')}_${moment().format('YYYY-MM-DD')}.csv`,
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI('曲库量统计')}_${moment.unix(query.start_date).format('YYYY-MM-DD')}.csv`,
     });
 
     ctx.body = rs;
