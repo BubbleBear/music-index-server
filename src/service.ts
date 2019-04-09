@@ -7,13 +7,13 @@ import Redis from 'ioredis';
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 export default class Service {
-    private promise: Promise<MongoClient>;
-    
     client!: MongoClient;
 
-    private db!: Db;
+    redis: Redis.Redis;
 
-    private redis: Redis.Redis;
+    private promise: Promise<MongoClient>;
+
+    private db!: Db;
 
     constructor(options?: any) {
         this.promise = mongo.connect('mongodb://localhost:27017', Object.assign({
@@ -36,7 +36,7 @@ export default class Service {
         this.db = this.client.db('qq_music_spider');
     }
 
-    async findCompanies(companyIds: number[]) {
+    async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
         await this.sync();
 
         const companyCollection = this.db.collection('company');
@@ -46,15 +46,13 @@ export default class Service {
                 $in: companyIds.map(v => Number(v)),
             },
         })
-        .project({
-            _id: 0,
-        })
+        .project(projection)
         .toArray();
 
         return companies;        
     }
 
-    async findAlbums(albumIds: number[]) {
+    async findAlbums(albumIds: number[], projection: any = { _id: 0 }) {
         await this.sync();
 
         const albumCollection = this.db.collection('album');
@@ -64,9 +62,7 @@ export default class Service {
                 $in: albumIds.map(v => Number(v)),
             },
         })
-        .project({
-            _id: 0,
-        })
+        .project(projection)
         .toArray();
 
         return albums;
@@ -106,6 +102,49 @@ export default class Service {
         return await this.redis.del(REDIS_QQ_CRALWER_KEY);
     }
 
+    async createCompanyStatistics() {
+        await this.sync();
+
+        await this.db.createCollection('company_statistics');
+
+        const collection = this.db.collection('company_statistics');
+
+        (await collection.indexExists('createdAt')) || (await this.db.createIndex('company_statistics', 'createdAt'));
+
+        const companyCollection = this.db.collection('company');
+
+        const companyCursor = companyCollection.find({});
+
+        const bulk = [];
+
+        while (await companyCursor.hasNext()) {
+            const company = await companyCursor.next();
+
+            const counts = await this.findAlbums(
+                company.albumList.map((album: any) => album.album_id),
+                { _id: 0, total: 1 },
+            );
+
+            bulk.push({
+                company_id: company.company_id,
+                album_count: company.albumList.length,
+                song_count: counts.reduce((acc, cur) => {
+                    acc += cur.total;
+                    return acc;
+                }, 0),
+                createdAt: new Date(),
+            });
+        }
+
+        await collection.bulkWrite(
+            bulk.map((op: any) => ({
+                insertOne: op,
+            })),
+        );
+
+        return;
+    }
+
     crawl(parallelSize: number = 5, companyQuant: number = 10) {
         const crawler = cp.spawn(
             'node',
@@ -122,15 +161,7 @@ export default class Service {
     
         crawler.on('close', async (code) => {
             if (code == 0) {
-                await this.db.createCollection('album');
-
-                const collection = this.db.collection('album_statistics');
-
-                (await collection.indexExists('company_id')) || (await this.db.createIndex('album_statistics', 'company_id'));
-
-                // await collection.insert({
-
-                // });
+                await this.createCompanyStatistics();
             }
         });
 
@@ -146,28 +177,13 @@ export default class Service {
             return false;
         }
     }
-
-    async test() {
-        const collection = this.db.collection('company');
-
-        const count = await collection.count();
-    }
 }
 
 if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        // const r = await service.findEmbededAlbums([64, 30])
-
-        // console.dir(JSON.stringify(r), {
-        //     depth: null,
-        // });
-
-        const t = await service.test();
-
-        console.log(t);
-
         await service.client.close();
+        service.redis.disconnect();
     }();
 }

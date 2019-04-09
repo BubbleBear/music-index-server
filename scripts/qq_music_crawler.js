@@ -197,7 +197,6 @@ async function run() {
     for (let i = 1; i < companyQuant; i++) {
         if (visited.includes(i.toString()) === false) {
             scheduler.push(i);
-            count++;
         }
     }
 

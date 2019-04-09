@@ -21,7 +21,9 @@ router.get('/company/:companyId/detail', async (ctx, next) => {
 });
 
 router.post('/cleanse_crawler_cache', async (ctx, next) => {
-    ctx.body = await service.cleanseCrawlerCache();
+    ctx.body = {
+        success: await service.cleanseCrawlerCache(),
+    };
 
     next();
 });
@@ -33,9 +35,11 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
 
     const embeded = await service.findEmbededAlbums(companyIds);
 
-    const formatted = embeded[0].albumList.reduce((acc: any[], album: any) => {
+    const company = embeded[0] || { albumList: [] };
+
+    const formatted = company.albumList.reduce((acc: any[], album: any) => {
         const songs = album.list.map((song: any) => ({
-            companyName: embeded[0].name || '未知唱片公司',
+            companyName: company.name || '未知唱片公司',
             companyId: params.companyId,
             albumName: album.name || '未知专辑',
             albumId: album.album_id,
@@ -73,7 +77,7 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
     next();
 });
 
-router.get('/crawl', async (ctx, next) => {
+router.post('/crawl', async (ctx, next) => {
     const query = ctx.query;
 
     const app: any = ctx.app;
@@ -89,7 +93,7 @@ router.get('/crawl', async (ctx, next) => {
     next();
 });
 
-router.get('/terminate_crawling', async (ctx, next) => {
+router.post('/terminate_crawling', async (ctx, next) => {
     const app: any = ctx.app;
 
     const crawler = app.childProcessMap.crawler;
