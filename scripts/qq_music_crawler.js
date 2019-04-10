@@ -28,7 +28,7 @@ async function getDB() {
             useNewUrlParser: true,
         });
 
-        db = client.db('qq_music_spider');
+        db = client.db('qq_music_crawler');
         await db.createCollection('company');
         await db.createCollection('album');
 
@@ -44,6 +44,10 @@ async function getDB() {
 
 async function getAlbumInfo(albumMid) {
     const result = await axios.get(`https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${albumMid}`);
+
+    if (result.data.data == null) {
+        throw new Error('empty data');
+    }
 
     return result.data.data;
 }
@@ -242,8 +246,8 @@ const scheduler = new Scheduler({
             desc: 'error',
             url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
             error: {
-                message: e.message,
-                stack: e.stack,
+                message: err.message,
+                stack: err.stack,
             },
             errorCount: task.errorCount,
         });

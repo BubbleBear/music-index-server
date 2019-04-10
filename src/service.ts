@@ -36,7 +36,7 @@ export default class Service {
         }
 
         this.client = await this.promise;
-        this.db = this.client.db('qq_music_spider');
+        this.db = this.client.db('qq_music_crawler');
     }
 
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
