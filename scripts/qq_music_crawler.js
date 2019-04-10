@@ -78,8 +78,7 @@ async function bulkUpsertAlbum(albums) {
             });
 
             if (task.errorCount < 10) {
-                task.errorCount++;
-                albumScheduler.pendingTasks.push(task);
+                albumScheduler.push(task.albumId, task.albumMid, task.errorCount + 1);
             }
         },
     });
@@ -257,7 +256,7 @@ const scheduler = new Scheduler({
             }
     
             task.errorCount++;
-            scheduler.pendingTasks.push(task);
+            scheduler.push(task.companyId, task.page, task.errorCount + 1);
         }
     },
 });
