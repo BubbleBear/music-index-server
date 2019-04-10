@@ -153,47 +153,47 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
         runningLength: scheduler.runningTasks.length,
     });
 
-    const result = await axios.get(url);
+    const previous = await db.collection('company').findOne({ company_id: companyId });
+    const companyDetail = previous || await getCompanyDetail(companyId);
 
-    if (!result.data || !result.data.data) {
+    const result = await axios.get(url);
+    let newAlbumList;
+
+    if (result.data && result.data.data) {
+        const album = result.data.data.album;
+
+        newAlbumList = album && album.albumList && album.albumList.map(a => ({
+            album_id: a.Falbum_id, 
+            album_mid: a.Falbum_mid,
+            album_name: a.Falbum_name,
+        })) || [];
+
+        let albumList = companyDetail.albumList || [];
+
+        const albumMap = albumList.reduce((acc, album) => {
+            acc[album.album_id] = album;
+            return acc;
+        }, {});
+
+        newAlbumList.forEach(album => {
+            albumMap[album.album_id] = album;
+        });
+
+        albumList = Object.keys(albumMap).reduce((acc, key) => {
+            acc.push(albumMap[key]);
+            return acc;
+        }, []);
+
+        companyDetail.company_id = companyId;
+        companyDetail.albumList = albumList;
+    } else {
         logger.warn({
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'illegal response',
             url,
             response: result.data,
         });
-        return true;
     }
-
-    const album = result.data.data.album;
-
-    const newAlbumList = album && album.albumList && album.albumList.map(a => ({
-        album_id: a.Falbum_id, 
-        album_mid: a.Falbum_mid,
-        album_name: a.Falbum_name,
-    })) || [];
-
-    const previous = await db.collection('company').findOne({ company_id: companyId });
-    const companyDetail = previous || await getCompanyDetail(companyId);
-
-    let albumList = companyDetail.albumList || [];
-
-    const albumMap = albumList.reduce((acc, album) => {
-        acc[album.album_id] = album;
-        return acc;
-    }, {});
-
-    newAlbumList.forEach(album => {
-        albumMap[album.album_id] = album;
-    });
-
-    albumList = Object.keys(albumMap).reduce((acc, key) => {
-        acc.push(albumMap[key]);
-        return acc;
-    }, []);
-
-    companyDetail.company_id = companyId;
-    companyDetail.albumList = albumList;
 
     await db.collection('company').updateOne(
         { company_id: companyId },
@@ -205,11 +205,17 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
         },
     );
 
-    await bulkUpsertAlbum(newAlbumList);
+    if (newAlbumList) {
+        await bulkUpsertAlbum(newAlbumList);
 
-    console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
+        console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
 
-    return newAlbumList.length !== pageSize;
+        return newAlbumList.length !== pageSize;
+    } else {
+        console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
+        
+        return true;
+    }
 }
 
 const parallelSize = process.argv[2] || 5;
