@@ -51,7 +51,7 @@ async function getAlbumInfo(albumMid) {
 async function bulkUpsertAlbum(albums) {
     const albumExtras = [];
 
-    const scheduler = new Scheduler({
+    const albumScheduler = new Scheduler({
         newTask(albumId, albumMid, errorCount = 0) {
             return {
                 albumId,
@@ -79,16 +79,36 @@ async function bulkUpsertAlbum(albums) {
 
             if (task.errorCount < 10) {
                 task.errorCount++;
-                scheduler.pendingTasks.push(task);
+                albumScheduler.pendingTasks.push(task);
             }
         },
     });
 
     albums.forEach(album => {
-        scheduler.push(album.album_id, album.album_mid);
+        albumScheduler.push(album.album_id, album.album_mid);
     });
 
-    await scheduler.dispatch();
+    await albumScheduler.dispatch();
+
+    if (albumExtras.length !== albums.length) {
+        const diff = [];
+
+        const extraIdMap = albumExtras.reduce((acc, album) => {
+            acc[album.id] = album;
+            return acc;
+        }, {});
+
+        const albumIdMap = albums.reduce((acc, album) => {
+            acc[album.album_id] = album;
+            return acc;
+        }, {});
+
+        Object.keys(albumIdMap).forEach(v => {
+            !extraIdMap[v] && diff.push(v);
+        });
+
+        console.log(diff);
+    }
 
     const upserts = albumExtras.length && await db.collection('album').bulkWrite(
         albumExtras.map((album) => {
@@ -245,6 +265,8 @@ const scheduler = new Scheduler({
 const companyPageTable = Array(companyQuant).fill(0);
 
 async function run() {
+    await getDB();
+
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
 
     const visitedMap = visited.reduce((acc, cur) => {
@@ -267,38 +289,47 @@ async function run() {
 }
 
 async function inspect() {
+    await getDB();
+
     const test = await db.collection('company').find({}).project({_id: 0, company_id: 1, albumTotal: 1, albumList: 1}).toArray();
-        // console.log(test.map(v => v.company_id).sort((a, b) => a - b))
-        console.log('company counts: ', test.length);
-        console.log('theoretical album counts: ', test.reduce((acc, cur) => {
-            return acc + cur.albumTotal;
-        }, 0));
+    // console.log(test.map(v => v.company_id).sort((a, b) => a - b))
+    console.log('company counts: ', test.length);
+    console.log('theoretical album counts: ', test.reduce((acc, cur) => {
+        return acc + cur.albumTotal;
+    }, 0));
 
-        const albums = test.reduce((acc, cur) => {
-            acc = acc.concat(cur.albumList);
-            return acc;
-        }, []);
+    const albums = test.reduce((acc, cur) => {
+        acc = acc.concat(cur.albumList);
+        return acc;
+    }, []);
 
-        const r = await db.collection('album').find({}).project({_id: 0, album_id: 1}).toArray();
-        const rt = r.reduce((acc, cur) => {
-            acc.push(cur.album_id);
-            return acc;
-        }, []);
+    const r = await db.collection('album').find({}).project({_id: 0, album_id: 1}).toArray();
+    const rt = r.reduce((acc, cur) => {
+        acc.push(cur.album_id);
+        return acc;
+    }, []);
 
-        console.log('actual album counts: ', rt.length)
+    console.log('actual album counts: ', rt.length)
 
-        const cp = [];
-        albums.forEach(v => {
-            const id = Number(v.album_id);
-            rt.includes(id) || cp.push(id);
-        })
+    const cp = [];
+    albums.forEach(v => {
+        const id = Number(v.album_id);
+        rt.includes(id) || cp.push(id);
+    })
 
-        console.log('diff: ', cp);
+    console.log('diff: ', cp);
+
+    client.close()
+    redis.disconnect();
 }
 
 if (require.main === module) {
     !async function() {
-        await getDB();
         await run();
     }()
 }
+
+module.exports = {
+    run,
+    inspect,
+};
