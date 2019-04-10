@@ -125,6 +125,14 @@
       width: 60px;
       height: 60px;
     }
+
+    #date-select {
+      height: 28px;
+      width: 160px;
+      line-height: 28px;
+      border-radius: 2px;
+      border: 1px #cdcdcd solid;
+    }
   </style>
 </head>
 
@@ -146,7 +154,9 @@
         <div class="title">下载对应日期下的公司统计数据</div>
         <div class="input-wrap">
           <span>日期:</span>
-          <input type="date" id="date-ipt">
+          <select id="date-select">
+            <option value="none">请选择日期</option>
+          </select>
         </div>
       </div>
       <button class="download" id="ddb">查询并下载</button>
@@ -167,11 +177,29 @@
   </div>
 </body>
 <script src="https://cdn.bootcss.com/moment.js/2.24.0/moment.min.js"></script>
+<script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
 <script>
   function ctrlLoading(isShow) {
     if (isShow) document.getElementById('loading').display = 'block'
     else document.getElementById('loading').display = 'none'
   }
+  function getDateOptions() {
+    ctrlLoading(true)
+    window.axios.get('/api/v1/company_statistics/dates').then(res => {
+      ctrlLoading(false)
+      res.data.dates.forEach(function (data) {
+        var option = document.createElement('option')
+        console.log(option)
+        option.value = option.innerText = data
+        document.getElementById('date-select').append(option)
+      })
+    }).catch(err => {
+      ctrlLoading(false)
+      if (err.msg) window.alert(err.msg)
+      else window.alert('获取时间列表失败')
+    })
+  }
+  getDateOptions()
   function downloadCsv(url) {
     var a = document.createElement('a')
     a.href = url
@@ -187,8 +215,8 @@
   }
 
   function downloadDL() {
-    if (!document.getElementById('date-ipt').value) return window.alert('请选择日期')
-    var start = window.moment(document.getElementById('date-ipt').value)
+    if (document.getElementById('date-select').value === 'none') return window.alert('请选择日期')
+    var start = window.moment(document.getElementById('date-select').value)
     var end = window.moment(start).endOf('day')
     ctrlLoading(true)
     downloadCsv('/api/v1/csv/company_statistics?start_date=' + start.unix() + '&end_date=' + end.unix())
