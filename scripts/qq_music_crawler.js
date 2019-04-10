@@ -74,6 +74,7 @@ async function bulkUpsertAlbum(albums) {
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 desc: 'error',
                 url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${task.albumMid}`,
+                albumId: task.albumId,
                 error: {
                     message: err.message,
                     stack: err.stack,
@@ -245,6 +246,7 @@ const scheduler = new Scheduler({
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'error',
             url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
+            companyId: task.companyId,
             error: {
                 message: err.message,
                 stack: err.stack,
