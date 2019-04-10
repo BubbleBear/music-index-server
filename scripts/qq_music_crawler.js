@@ -212,8 +212,6 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
 
         return newAlbumList.length !== pageSize;
     } else {
-        console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
-        
         return true;
     }
 }
