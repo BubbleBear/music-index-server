@@ -1,5 +1,5 @@
 export function list2csv(list: any[], headerMap?: any) {
-    const collumns = Object.keys(list[0] || {});
+    const collumns = Object.keys(headerMap || list[0] || {});
 
     const header = collumns.map(v => `"${headerMap ? headerMap[v] : v}"`).join(',');
 

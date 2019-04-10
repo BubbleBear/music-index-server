@@ -9,8 +9,6 @@ import router from './router';
 
 const app = new Koa();
 
-(app as any).childProcessMap = {};
-
 app
     .use(cors())
     .use(serve(path.join(__dirname, '../public')))

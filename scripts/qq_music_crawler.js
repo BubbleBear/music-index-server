@@ -308,7 +308,18 @@ async function inspect() {
     }, 0));
 
     const albums = test.reduce((acc, cur) => {
-        acc = acc.concat(cur.albumList);
+        if (cur.albumList) {
+            cur.albumList.forEach(album => {
+                if (!album) {
+                    console.log(cur.company_id);
+                }
+            });
+    
+            acc = acc.concat(cur.albumList);
+        } else {
+            console.log(cur.company_id);
+        }
+
         return acc;
     }, []);
 
@@ -322,8 +333,10 @@ async function inspect() {
 
     const cp = [];
     albums.forEach(v => {
-        const id = Number(v.album_id);
-        rt.includes(id) || cp.push(id);
+        if (v) {
+            const id = Number(v.album_id);
+            rt.includes(id) || cp.push(id);
+        }
     })
 
     console.log('diff: ', cp);

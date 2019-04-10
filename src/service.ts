@@ -104,7 +104,7 @@ export default class Service {
         return await this.redis.del(REDIS_QQ_CRALWER_KEY);
     }
 
-    async createCompanyStatistics(fakeDate?: number | string) {
+    async createCompanyStatistics(assignedDate?: number | string) {
         await this.sync();
 
         await this.db.createCollection('company_statistics');
@@ -119,13 +119,14 @@ export default class Service {
 
         const bulk = [];
 
-        const date1 = moment(fakeDate).format('YYYY-MM-DD');
+        const date1 = moment(assignedDate).format('YYYY-MM-DD');
 
         while (await companyCursor.hasNext()) {
             const company = await companyCursor.next();
+            const albumList = company.albumList || [];
 
             const albums = await this.findAlbums(
-                company.albumList.map((album: any) => album.album_id),
+                albumList.map((album: any) => album.album_id),
                 { _id: 0, total: 1, company: 1 },
             );
 
@@ -137,7 +138,7 @@ export default class Service {
                     acc += cur.total;
                     return acc;
                 }, 0),
-                createdAt: moment(fakeDate).unix(),
+                createdAt: moment(assignedDate).unix(),
             });
         }
 
@@ -147,7 +148,7 @@ export default class Service {
             })),
         );
 
-        const date2 = moment(fakeDate).format('YYYY-MM-DD');
+        const date2 = moment(assignedDate).format('YYYY-MM-DD');
 
         await this.redis.sadd(REDIS_QQ_STATISTICS_KEY, date1, date2);
 
@@ -213,7 +214,7 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        await service.createCompanyStatistics('2019-04-01');
+        await service.createCompanyStatistics('2019-03-21');
 
         await service.client.close();
         service.redis.disconnect();

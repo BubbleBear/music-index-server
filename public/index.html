@@ -70,7 +70,6 @@
     .input-wrap {
       font-size: 14px;
       color: #333;
-
     }
 
     .input-wrap span {
@@ -156,6 +155,10 @@
           <span>日期:</span>
           <select id="date-select">
             <option value="none">请选择日期</option>
+            <option value="30">过去30天</option>
+            <option value="90">过去90天</option>
+            <option value="180">过去180天</option>
+            <option value="365">过去365天</option>
           </select>
         </div>
       </div>
@@ -178,11 +181,13 @@
 </body>
 <script src="https://cdn.bootcss.com/moment.js/2.24.0/moment.min.js"></script>
 <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
+<script src="https://cdn.bootcss.com/jquery/3.3.1/jquery.min.js"></script>
 <script>
   function ctrlLoading(isShow) {
     if (isShow) document.getElementById('loading').display = 'block'
     else document.getElementById('loading').display = 'none'
   }
+
   function getDateOptions() {
     ctrlLoading(true)
     window.axios.get('/api/v1/company_statistics/dates').then(res => {
@@ -213,13 +218,19 @@
     ipt.value = ''
     ctrlLoading(false)
   }
-
+  function formatTimeHorizon(value) {
+    var arr = [30, 90, 180, 365]
+    if (arr.indexOf(Number(value)) > -1) {
+      // console.log(window.moment().startOf('day').format('YYYY-MM-DD HH:mm:ss'))
+      // console.log(window.moment().startOf('day').subtract(value, 'day').format('YYYY-MM-DD HH:mm:ss'))
+      return [+window.moment().startOf('day'), +window.moment().startOf('day').subtract(value, 'day')]
+    } else return [+window.moment(value), +window.moment(value).endOf('day')]
+  }
   function downloadDL() {
     if (document.getElementById('date-select').value === 'none') return window.alert('请选择日期')
-    var start = window.moment(document.getElementById('date-select').value)
-    var end = window.moment(start).endOf('day')
+    var timeHorizon = formatTimeHorizon(document.getElementById('date-select').value)
     ctrlLoading(true)
-    downloadCsv('/api/v1/csv/company_statistics?start_date=' + start.unix() + '&end_date=' + end.unix())
+    downloadCsv('/api/v1/csv/company_statistics?start_date=' + timeHorizon[0].unix() + '&end_date=' + timeHorizon[1].unix())
     ctrlLoading(false)
   }
   document.getElementById('dcb').onclick = downloadMD

@@ -96,24 +96,35 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const conditions = {
         createdAt: {
-            $gt: Number(query.start_date),
+            $gte: Number(query.start_date),
             $lte: Number(query.end_date),
         },
     };
 
     const result = await service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
 
-    const csv = utils.list2csv(
-        result.map(v => {
-            v.createdAt = moment.unix(v.createdAt).format('YYYY-MM-DD');
-            return v;
-        }), {
-            company_id: '唱片公司ID',
-            company_name: '唱片公司',
-            song_count: '歌曲数',
-            createdAt: '分析日期',
-        }
-    );
+    const dates = new Set();
+
+    const statisticsMap = result.reduce((acc, cur) => {
+        const createdAt = moment.unix(cur.createdAt).format('YYYY-MM-DD');
+        dates.has(createdAt) || dates.add(createdAt);
+        acc[cur.company_id] || (acc[cur.company_id] = cur);
+        acc[cur.company_id][createdAt] = cur.song_count;
+        return acc;
+    }, {});
+
+    const statistics = Object.keys(statisticsMap).map(k => statisticsMap[k]);
+
+    const headerMap: any = {
+        company_id: '唱片公司ID',
+        company_name: '唱片公司',
+    };
+
+    [...dates].forEach(date => {
+        headerMap[date] = date;
+    });
+
+    const csv = utils.list2csv(statistics, headerMap);
 
     const rs = new stream.Readable({
         read() {},
@@ -142,9 +153,9 @@ router.post('/crawl', async (ctx, next) => {
 
     const app: any = ctx.app;
 
-    const crawler = service.crawl(query.parallel_size, query.company_quant);
+    // const crawler = service.crawl(query.parallel_size, query.company_quant);
 
-    app.childProcessMap.crawler = crawler;
+    // app.childProcessMap.crawler = crawler;
 
     ctx.body = {
         success: true,
