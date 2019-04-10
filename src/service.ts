@@ -113,6 +113,12 @@ export default class Service {
 
         (await collection.indexExists('createdAt')) || (await this.db.createIndex('company_statistics', 'createdAt'));
 
+        const analysed = await collection.findOne({ createdAt: moment(assignedDate).unix() });
+
+        if (analysed !== null) {
+            return true;
+        }
+
         const companyCollection = this.db.collection('company');
 
         const companyCursor = companyCollection.find({});
@@ -214,7 +220,7 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        await service.createCompanyStatistics('2019-03-21');
+        await service.createCompanyStatistics();
 
         await service.client.close();
         service.redis.disconnect();

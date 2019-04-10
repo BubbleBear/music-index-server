@@ -223,8 +223,8 @@
     if (arr.indexOf(Number(value)) > -1) {
       // console.log(window.moment().startOf('day').format('YYYY-MM-DD HH:mm:ss'))
       // console.log(window.moment().startOf('day').subtract(value, 'day').format('YYYY-MM-DD HH:mm:ss'))
-      return [+window.moment().startOf('day'), +window.moment().startOf('day').subtract(value, 'day')]
-    } else return [+window.moment(value), +window.moment(value).endOf('day')]
+      return [window.moment().startOf('day').subtract(value, 'day'), window.moment().endOf('day')]
+    } else return [window.moment(value), window.moment(value).endOf('day')]
   }
   function downloadDL() {
     if (document.getElementById('date-select').value === 'none') return window.alert('请选择日期')

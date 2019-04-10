@@ -48,10 +48,10 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
             companyName: company.name || '未知唱片公司',
             companyId: params.companyId,
             albumName: album.name || '未知专辑',
-            albumId: album.album_id,
+            albumMid: album.mid,
             singerName: song.singer.map((singer: any) => singer.name).join(', ') || '群星',
             songName: song.songname,
-            songId: song.songid,
+            songMid: song.songmid,
             publishedAt: album.aDate,
         }));
 
@@ -64,10 +64,10 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
         companyName: '唱片公司',
         companyId: '唱片公司ID',
         albumName: '专辑名',
-        albumId: '专辑ID',
+        albumMid: '专辑ID',
         singerName: '歌手名',
         songName: '歌曲名',
-        songId: '歌曲ID',
+        songMid: '歌曲媒体ID',
         publishedAt: '发行时间',
     });
 
@@ -120,7 +120,9 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         company_name: '唱片公司',
     };
 
-    [...dates].forEach(date => {
+    [...dates].sort((a, b) => {
+        return moment(a).unix() - moment(b).unix();
+    }).forEach(date => {
         headerMap[date] = date;
     });
 
@@ -183,7 +185,6 @@ router.post('/company_statistics', async (ctx, next) => {
 
     ctx.body = {
         success: Boolean(result),
-        data: result
     };
 
     return await next();
