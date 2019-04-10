@@ -1,6 +1,7 @@
 const axios = require('axios');
 const mongo = require('mongodb');
 const Redis = require('ioredis');
+const moment = require('moment');
 
 const Scheduler = require('./scheduler').default;
 const TaskStatus = require('./scheduler').TaskStatus;
@@ -76,6 +77,7 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
     const albumUrl = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
 
     logger.info({
+        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         desc: 'request',
         albumUrl,
         pendingLength: scheduler.pendingTasks.length,
@@ -85,8 +87,8 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
     const result = await axios.get(albumUrl);
 
     if (!result.data || !result.data.data || !result.data.data.album) {
-        // to do add logger here
         logger.warn({
+            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'illegal response',
             albumUrl,
             response: result.data,
@@ -128,11 +130,22 @@ async function getAlbumInfo(albumMid) {
 
         return result.data.data;
     } catch (e) {
-        return null;
+        console.log(e.message, e.stack);
+        logger.error({
+            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+            desc: 'error',
+            url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${albumMid}`,
+            error: {
+                message: e.message,
+                stack: e.stack,
+            },
+        });
+
+        return {};
     }
 }
 
-const parallelSize = process.argv[2] || 100;
+const parallelSize = process.argv[2] || 5;
 const companyQuant = process.argv[3] || 1e5 + 10;
 
 const scheduler = new Scheduler({
@@ -184,10 +197,16 @@ async function onDone(noMorePages, task) {
 }
 
 async function onError(err, task) {
+    console.log(err.message, err.stack)
     logger.error({
+        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         desc: 'error',
         url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
-        error: err,
+        error: {
+            message: e.message,
+            stack: e.stack,
+        },
+        errorCount: task.errorCount,
     });
 
     if (task.errorCount < 5) {
