@@ -252,7 +252,7 @@ async function run() {
         return acc;
     }, {});
 
-    for (let i = 1; i < companyQuant; i++) {
+    for (let i = 1; i <= companyQuant; i++) {
         if (!visitedMap[i]) {
             scheduler.push(i);
         }
