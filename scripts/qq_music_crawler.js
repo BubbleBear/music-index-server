@@ -42,10 +42,55 @@ async function getDB() {
     return db;
 }
 
-async function bulkInsertAlbum(albums) {
-    const albumExtras = await Promise.all(albums.map(album => getAlbumInfo(album.album_mid)));
+async function getAlbumInfo(albumMid) {
+    const result = await axios.get(`https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${albumMid}`);
 
-    const upserts = await db.collection('album').bulkWrite(
+    return result.data.data;
+}
+
+async function bulkUpsertAlbum(albums) {
+    const albumExtras = [];
+
+    const scheduler = new Scheduler({
+        newTask(albumId, albumMid, errorCount = 0) {
+            return {
+                albumId,
+                albumMid,
+                do: () => getAlbumInfo(albumMid),
+                status: TaskStatus.pending,
+                errorCount,
+            };
+        },
+        async onDone(album, task) {
+            albumExtras.push(album);
+        },
+        async onError(err, task) {
+            console.log(task.errorCount, err.message, err.stack);
+            logger.error({
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                desc: 'error',
+                url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${task.albumMid}`,
+                error: {
+                    message: err.message,
+                    stack: err.stack,
+                },
+                errorCount: task.errorCount,
+            });
+
+            if (task.errorCount < 10) {
+                task.errorCount++;
+                scheduler.pendingTasks.push(task);
+            }
+        },
+    });
+
+    albums.forEach(album => {
+        scheduler.push(album.album_id, album.album_mid);
+    });
+
+    await scheduler.dispatch();
+
+    const upserts = albumExtras.length && await db.collection('album').bulkWrite(
         albumExtras.map((album) => {
             album.album_id = album.id;
             delete album['id'];
@@ -58,7 +103,7 @@ async function bulkInsertAlbum(albums) {
                 upsert: true,
             } } : null;
         }).filter(v => v),
-    );
+    ) || [];
 
     return upserts;
 }
@@ -74,35 +119,54 @@ async function getCompanyDetail(companyId) {
 }
 
 async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
-    const albumUrl = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
+    const url = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
 
     logger.info({
         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         desc: 'request',
-        albumUrl,
+        url,
         pendingLength: scheduler.pendingTasks.length,
         runningLength: scheduler.runningTasks.length,
     });
 
-    const result = await axios.get(albumUrl);
+    const result = await axios.get(url);
 
-    if (!result.data || !result.data.data || !result.data.data.album) {
+    if (!result.data || !result.data.data) {
         logger.warn({
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'illegal response',
-            albumUrl,
+            url,
             response: result.data,
         });
         return true;
     }
 
-    const companyDetail = await getCompanyDetail(companyId);
+    const album = result.data.data.album;
 
-    const albumList = result.data.data.album.albumList.map(a => ({
-        album_id: a.Falbum_id,
+    const newAlbumList = album && album.albumList && album.albumList.map(a => ({
+        album_id: a.Falbum_id, 
         album_mid: a.Falbum_mid,
         album_name: a.Falbum_name,
-    }));
+    })) || [];
+
+    const previous = await db.collection('company').findOne({ company_id: companyId });
+    const companyDetail = previous || await getCompanyDetail(companyId);
+
+    let albumList = companyDetail.albumList || [];
+
+    const albumMap = albumList.reduce((acc, album) => {
+        acc[album.album_id] = album;
+        return acc;
+    }, {});
+
+    newAlbumList.forEach(album => {
+        albumMap[album.album_id] = album;
+    });
+
+    albumList = Object.keys(albumMap).reduce((acc, key) => {
+        acc.push(albumMap[key]);
+        return acc;
+    }, []);
 
     companyDetail.company_id = companyId;
     companyDetail.albumList = albumList;
@@ -117,32 +181,11 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
         },
     );
 
-    await bulkInsertAlbum(albumList);
+    await bulkUpsertAlbum(newAlbumList);
 
-    console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${albumList.length}`);
+    console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
 
-    return albumList.length !== pageSize;
-}
-
-async function getAlbumInfo(albumMid) {
-    try {
-        const result = await axios.get(`https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${albumMid}`);
-
-        return result.data.data;
-    } catch (e) {
-        console.log(e.message, e.stack);
-        logger.error({
-            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
-            desc: 'error',
-            url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${albumMid}`,
-            error: {
-                message: e.message,
-                stack: e.stack,
-            },
-        });
-
-        return {};
-    }
+    return newAlbumList.length !== pageSize;
 }
 
 const parallelSize = process.argv[2] || 5;
@@ -150,78 +193,57 @@ const companyQuant = process.argv[3] || 1e5 + 10;
 
 const scheduler = new Scheduler({
     parallelSize,
-    newTask,
-    onDone,
-    onError,
+    newTask(companyId, page = 1, errorCount = 0, pageSize = 40) {
+        const task = {
+            companyId,
+            page,
+            pageSize,
+            do: () => getCompanyAlbumListCU({page, companyId, pageSize}),
+            status: TaskStatus.pending,
+            errorCount,
+        };
+    
+        companyPageTable[companyId] = page;
+    
+        return task;
+    },
+    async onDone(noMorePages, task) {
+        console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
+    
+        if (!noMorePages) {
+            scheduler.push(task.companyId, task.page + 1);
+        } else {
+            await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
+        }
+    },
+    async onError(err, task) {
+        console.log(err.message, err.stack)
+        logger.error({
+            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+            desc: 'error',
+            url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
+            error: {
+                message: e.message,
+                stack: e.stack,
+            },
+            errorCount: task.errorCount,
+        });
+    
+        if (task.errorCount < 10) {
+            if (task.errorCount < 1) {
+                if (task.page == companyPageTable[task.companyId]) {
+                    scheduler.push(task.companyId, task.page + 1);
+                }
+            }
+    
+            task.errorCount++;
+            scheduler.pendingTasks.push(task);
+        }
+    },
 });
 
-// each value stands for current page of the company identified by index
 const companyPageTable = Array(companyQuant).fill(0);
 
-function newTask(companyId, page = 1, errorCount = 0, pageSize = 40) {
-    const task = {
-        companyId,
-        page,
-        pageSize,
-        do: () => getCompanyAlbumListCU({page, companyId, pageSize}),
-        status: TaskStatus.pending,
-        errorCount,
-    };
-
-    companyPageTable[companyId] = page;
-
-    return task;
-}
-
-async function onDone(noMorePages, task) {
-    console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
-
-    if (!noMorePages) {
-        scheduler.push(task.companyId, task.page + 1);
-        // if (task.page == companyPageTable[task.companyId]) {
-        //     scheduler.push(task.companyId, task.page + 1);
-        // } else {
-        //     console.log('######################', task.companyId, task.page, companyPageTable[task.companyId])
-        // }
-    } else {
-        await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
-
-        // let companyId = task.companyId;
-
-        // while (companyId < companyQuant && await redis.sismember(REDIS_QMC_COMPANY_KEY, companyId) == 1) {
-        //     companyId += parallelSize;
-        // }
-
-        // companyId < companyQuant && scheduler.push(companyId);
-    }
-}
-
-async function onError(err, task) {
-    console.log(err.message, err.stack)
-    logger.error({
-        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
-        desc: 'error',
-        url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
-        error: {
-            message: e.message,
-            stack: e.stack,
-        },
-        errorCount: task.errorCount,
-    });
-
-    if (task.errorCount < 5) {
-        if (task.errorCount < 1) {
-            if (task.page == companyPageTable[task.companyId]) {
-                scheduler.push(task.companyId, task.page + 1);
-            }
-        }
-
-        task.errorCount++;
-        scheduler.pendingTasks.push(task);
-    }
-}
-
-// another implementation for `start`
 async function run() {
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
 
@@ -242,6 +264,36 @@ async function run() {
     redis.disconnect();
 
     return;
+}
+
+async function inspect() {
+    const test = await db.collection('company').find({}).project({_id: 0, company_id: 1, albumTotal: 1, albumList: 1}).toArray();
+        // console.log(test.map(v => v.company_id).sort((a, b) => a - b))
+        console.log('company counts: ', test.length);
+        console.log('theoretical album counts: ', test.reduce((acc, cur) => {
+            return acc + cur.albumTotal;
+        }, 0));
+
+        const albums = test.reduce((acc, cur) => {
+            acc = acc.concat(cur.albumList);
+            return acc;
+        }, []);
+
+        const r = await db.collection('album').find({}).project({_id: 0, album_id: 1}).toArray();
+        const rt = r.reduce((acc, cur) => {
+            acc.push(cur.album_id);
+            return acc;
+        }, []);
+
+        console.log('actual album counts: ', rt.length)
+
+        const cp = [];
+        albums.forEach(v => {
+            const id = Number(v.album_id);
+            rt.includes(id) || cp.push(id);
+        })
+
+        console.log('diff: ', cp);
 }
 
 if (require.main === module) {

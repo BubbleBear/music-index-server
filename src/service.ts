@@ -132,7 +132,7 @@ export default class Service {
             bulk.push({
                 company_id: company.company_id,
                 company_name: company.name,
-                album_count: company.albumList.length,
+                album_count: company.albumTotal,
                 song_count: albums.reduce((acc, cur) => {
                     acc += cur.total;
                     return acc;

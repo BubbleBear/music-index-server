@@ -6,6 +6,7 @@
   "scripts": {
     "start": "node -r ts-node/register src/app.ts",
     "dev": "supervisor -w src,scripts -e ts,js,json -- -r ts-node/register src/app.ts",
+    "crawl": "node scripts/qq_music_crawler.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {

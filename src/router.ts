@@ -110,7 +110,6 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         }), {
             company_id: '唱片公司ID',
             company_name: '唱片公司',
-            album_count: '专辑数',
             song_count: '歌曲数',
             createdAt: '分析日期',
         }
