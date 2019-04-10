@@ -42,7 +42,9 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
     const company = embeded[0] || { albumList: [] };
 
     const formatted = company.albumList.reduce((acc: any[], album: any) => {
-        const songs = album.list.map((song: any) => ({
+        const list = album && album.list || [];
+
+        const songs = list.map((song: any) => ({
             companyName: company.name || '未知唱片公司',
             companyId: params.companyId,
             albumName: album.name || '未知专辑',
@@ -165,10 +167,13 @@ router.post('/terminate_crawling', async (ctx, next) => {
 });
 
 router.post('/company_statistics', async (ctx, next) => {
-    const result = await service.createCompanyStatistics();
+    const body = ctx.request.body;
+
+    const result = await service.createCompanyStatistics(body.date);
 
     ctx.body = {
         success: Boolean(result),
+        data: result
     };
 
     return await next();
