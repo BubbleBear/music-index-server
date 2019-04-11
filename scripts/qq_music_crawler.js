@@ -159,7 +159,7 @@ async function getCompany(companyId) {
             }
         },
         async onError(err, task) {
-            console.log(err)
+            console.log(task.errorCount, err.message, err.stack);
             logger.error({
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 desc: 'page error',
