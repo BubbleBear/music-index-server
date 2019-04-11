@@ -112,6 +112,7 @@ export default class Service {
         const collection = this.db.collection('company_statistics');
 
         (await collection.indexExists('createdAt')) || (await this.db.createIndex('company_statistics', 'createdAt'));
+        (await collection.indexExists([ 'company_id', 'createdAt' ])) || (await this.db.createIndex('company_statistics', [ 'company_id', 'createdAt' ]));
 
         const analysed = await collection.findOne({ createdAt: moment(assignedDate).unix() });
 
@@ -139,7 +140,7 @@ export default class Service {
             bulk.push({
                 company_id: company.company_id,
                 company_name: company.name,
-                album_count: company.albumTotal,
+                album_count: albums.length,
                 song_count: albums.reduce((acc, cur) => {
                     acc += cur.total;
                     return acc;
