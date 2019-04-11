@@ -17,6 +17,10 @@ axios.default.timeout = 5000;
 
 const REDIS_QMC_COMPANY_KEY = 'qq.music.crawler.company';
 
+const MONGO_COMPANY_COLLECTION = 'company';
+
+const MONGO_ALBUM_COLLECTION = 'album';
+
 let client;
 
 let db;
@@ -29,14 +33,14 @@ async function getDB() {
         });
 
         db = client.db('qq_music_crawler');
-        await db.createCollection('company');
-        await db.createCollection('album');
+        await db.createCollection(MONGO_COMPANY_COLLECTION);
+        await db.createCollection(MONGO_ALBUM_COLLECTION);
 
-        const company = db.collection('company');
-        (await company.indexExists('company_id')) || (await db.createIndex('company', 'company_id'));
+        const company = db.collection(MONGO_COMPANY_COLLECTION);
+        (await company.indexExists('company_id')) || (await db.createIndex(MONGO_COMPANY_COLLECTION, 'company_id'));
 
-        const album = db.collection('album');
-        (await album.indexExists('album_id')) || (await db.createIndex('album', 'album_id'));
+        const album = db.collection(MONGO_ALBUM_COLLECTION);
+        (await album.indexExists('album_id')) || (await db.createIndex(MONGO_ALBUM_COLLECTION, 'album_id'));
     }
 
     return db;
@@ -52,13 +56,12 @@ async function getAlbumInfo(albumMid) {
     return result.data.data;
 }
 
-async function bulkUpsertAlbum(albums) {
+async function bulkUpsertAlbum(albumList) {
     const albumExtras = [];
 
     const albumScheduler = new Scheduler({
-        newTask(albumId, albumMid, errorCount = 0) {
+        newTask(albumMid, errorCount = 0) {
             return {
-                albumId,
                 albumMid,
                 do: () => getAlbumInfo(albumMid),
                 status: TaskStatus.pending,
@@ -72,9 +75,9 @@ async function bulkUpsertAlbum(albums) {
             console.log(task.errorCount, err.message, err.stack);
             logger.error({
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
-                desc: 'error',
+                desc: 'album error',
                 url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${task.albumMid}`,
-                albumId: task.albumId,
+                albumMid: task.albumMid,
                 error: {
                     message: err.message,
                     stack: err.stack,
@@ -82,110 +85,165 @@ async function bulkUpsertAlbum(albums) {
                 errorCount: task.errorCount,
             });
 
-            if (task.errorCount < 10) {
-                albumScheduler.push(task.albumId, task.albumMid, task.errorCount + 1);
+            if (task.errorCount < 5) {
+                albumScheduler.push(task.albumMid, task.errorCount + 1);
             }
         },
     });
 
-    albums.forEach(album => {
-        albumScheduler.push(album.album_id, album.album_mid);
+    albumList.forEach(album => {
+        albumScheduler.push(album.album_mid);
     });
 
     await albumScheduler.dispatch();
 
-    if (albumExtras.length !== albums.length) {
-        const diff = [];
-
-        const extraIdMap = albumExtras.reduce((acc, album) => {
-            acc[album.id] = album;
-            return acc;
-        }, {});
-
-        const albumIdMap = albums.reduce((acc, album) => {
-            acc[album.album_id] = album;
-            return acc;
-        }, {});
-
-        Object.keys(albumIdMap).forEach(v => {
-            !extraIdMap[v] && diff.push(v);
-        });
-
-        console.log(diff);
-    }
-
-    const upserts = albumExtras.length && await db.collection('album').bulkWrite(
+    const upserts = albumExtras.length && await db.collection(MONGO_ALBUM_COLLECTION).bulkWrite(
         albumExtras.map((album) => {
             album.album_id = album.id;
             delete album['id'];
 
-            return album ? { updateOne: {
+            return { updateOne: {
                 filter: { album_id: album.album_id },
                 update: {
                     $set: album,
                 },
                 upsert: true,
-            } } : null;
+            } };
         }).filter(v => v),
     ) || [];
 
     return upserts;
 }
 
-async function getCompanyDetail(companyId) {
+async function getCompanyInGeneral(companyId) {
     const companyUrl = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=5381&format=json&inCharset=utf8&outCharset=utf-8&platform=yqq.json&needNewCode=0&type=company&companyId=${companyId}&is_show=1`;
 
     const result = await axios.get(companyUrl);
 
-    const detail = result.data.data.company;
+    const company = result.data.data.company;
 
-    return detail;
+    await db.collection(MONGO_COMPANY_COLLECTION).updateOne(
+        { company_id: companyId },
+        {
+            $set: company,
+        },
+        {
+            upsert: true,
+        },
+    );
 }
 
-async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
-    const url = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1`;
+async function getCompany(companyId) {
+    await getCompanyInGeneral(companyId);
+
+    const albumLists = [];
+
+    const companyScheduler = new Scheduler({
+        newTask(sort, page = 1, pageSize = 40, errorCount = 0) {
+            return {
+                page,
+                pageSize,
+                sort,
+                do: () => getCompanyAlbumList({ companyId, sort, page, pageSize }),
+                status: TaskStatus.pending,
+                errorCount,
+            }
+        },
+        async onDone(albumList, task) {
+            if (albumList) {
+                albumLists.push(albumList);
+                
+                if (albumList.length == task.pageSize) {
+                    companyScheduler.push(task.sort, task.page + 1);
+                }
+            }
+        },
+        async onError(err, task) {
+            console.log(err)
+            logger.error({
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                desc: 'page error',
+                page: task.page,
+                sort: task.sort,
+                error: {
+                    message: err.message,
+                    stack: err.stack,
+                },
+                errorCount: task.errorCount,
+            });
+
+            if (task.errorCount < 5) {
+                companyScheduler.push(task.sort, task.page);
+            }
+        },
+    });
+
+    companyScheduler.push(0);
+    companyScheduler.push(1);
+
+    await companyScheduler.dispatch();
+
+    const albumMap = albumLists.reduce((acc, cur) => {
+        acc = acc.concat(cur);
+        return acc;
+    }, []).reduce((acc, cur) => {
+        if (cur && cur.album_id) {
+            acc[cur.album_id] || (acc[cur.album_id] = cur);
+        }
+
+        return acc;
+    }, {});
+
+    const albumList = Object.keys(albumMap).map(v => albumMap[v]);
+
+    // console.log(albumList)
+    await bulkUpsertAlbum(albumList);
+
+    const previous = await db.collection(MONGO_COMPANY_COLLECTION)
+        .findOne({ company_id: companyId });
+
+    const previousAlbumList = previous.albumList || [];
+
+    const unionAlbumMap = previousAlbumList.concat(albumList).reduce((acc, cur) => {
+        if (cur && cur.album_id) {
+            acc[cur.album_id] || (acc[cur.album_id] = cur);
+        }
+
+        return acc;
+    }, {});
+
+    const unionAlbumList = Object.keys(unionAlbumMap).map(v => unionAlbumMap[v]);
+
+    await db.collection(MONGO_COMPANY_COLLECTION).updateOne(
+        { company_id: companyId },
+        {
+            $set: {
+                albumList: unionAlbumList,
+            },
+        },
+        {
+            upsert: true,
+        },
+    );
+}
+
+async function getCompanyAlbumList({ page, pageSize, companyId, sort }) {
+    const url = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1&sort=${sort}`;
 
     logger.info({
         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         desc: 'request',
         url,
-        pendingLength: scheduler.pendingTasks.length,
-        runningLength: scheduler.runningTasks.length,
     });
 
-    const previous = await db.collection('company').findOne({ company_id: companyId });
-    const companyDetail = previous || await getCompanyDetail(companyId);
-
     const result = await axios.get(url);
-    let newAlbumList;
 
-    if (result.data && result.data.data) {
-        const album = result.data.data.album;
-
-        newAlbumList = album && album.albumList && album.albumList.map(a => ({
+    if (result.data && result.data.data && result.data.data.album && result.data.data.album.albumList) {
+        return result.data.data.album.albumList.map(a => ({
             album_id: a.Falbum_id, 
             album_mid: a.Falbum_mid,
             album_name: a.Falbum_name,
-        })) || [];
-
-        let albumList = companyDetail.albumList || [];
-
-        const albumMap = albumList.reduce((acc, album) => {
-            acc[album.album_id] = album;
-            return acc;
-        }, {});
-
-        newAlbumList.forEach(album => {
-            albumMap[album.album_id] = album;
-        });
-
-        albumList = Object.keys(albumMap).reduce((acc, key) => {
-            acc.push(albumMap[key]);
-            return acc;
-        }, []);
-
-        companyDetail.company_id = companyId;
-        companyDetail.albumList = albumList;
+        }));
     } else {
         logger.warn({
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
@@ -193,26 +251,8 @@ async function getCompanyAlbumListCU({ page, pageSize, companyId }) {
             url,
             response: result.data,
         });
-    }
 
-    await db.collection('company').updateOne(
-        { company_id: companyId },
-        {
-            $set: companyDetail,
-        },
-        {
-            upsert: true,
-        },
-    );
-
-    if (newAlbumList) {
-        await bulkUpsertAlbum(newAlbumList);
-
-        console.log(`company: ${companyId} page done page: ${page}, size: ${pageSize}, actual: ${newAlbumList.length}`);
-
-        return newAlbumList.length !== pageSize;
-    } else {
-        return true;
+        return null;
     }
 }
 
@@ -221,35 +261,27 @@ const companyQuant = process.argv[3] || 1e5 + 10;
 
 const scheduler = new Scheduler({
     parallelSize,
-    newTask(companyId, page = 1, errorCount = 0, pageSize = 40) {
+    newTask(companyId, errorCount = 0) {
         const task = {
             companyId,
-            page,
-            pageSize,
-            do: () => getCompanyAlbumListCU({page, companyId, pageSize}),
+            do: () => getCompany(companyId),
             status: TaskStatus.pending,
             errorCount,
         };
     
-        companyPageTable[companyId] = page;
-    
         return task;
     },
-    async onDone(noMorePages, task) {
-        console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
+    async onDone(_, task) {
+        // console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
+        console.log(`company: ${task.companyId} done.`);
     
-        if (!noMorePages) {
-            scheduler.push(task.companyId, task.page + 1);
-        } else {
-            await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
-        }
+        await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
     },
     async onError(err, task) {
         console.log(err.message, err.stack)
         logger.error({
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
-            desc: 'error',
-            url: `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${task.companyId}&pageNum=${task.page}&pageSize=${task.pageSize}&is_show=1`,
+            desc: 'company error',
             companyId: task.companyId,
             error: {
                 message: err.message,
@@ -258,20 +290,11 @@ const scheduler = new Scheduler({
             errorCount: task.errorCount,
         });
     
-        if (task.errorCount < 10) {
-            if (task.errorCount < 1) {
-                if (task.page == companyPageTable[task.companyId]) {
-                    scheduler.push(task.companyId, task.page + 1);
-                }
-            }
-    
-            task.errorCount++;
-            scheduler.push(task.companyId, task.page, task.errorCount + 1);
+        if (task.errorCount < 5) {
+            scheduler.push(task.companyId, task.errorCount + 1);
         }
     },
 });
-
-const companyPageTable = Array(companyQuant).fill(0);
 
 async function run() {
     await getDB();
@@ -300,8 +323,7 @@ async function run() {
 async function inspect() {
     await getDB();
 
-    const test = await db.collection('company').find({}).project({_id: 0, company_id: 1, albumTotal: 1, albumList: 1}).toArray();
-    // console.log(test.map(v => v.company_id).sort((a, b) => a - b))
+    const test = await db.collection(MONGO_COMPANY_COLLECTION).find({}).project({_id: 0, company_id: 1, albumTotal: 1, albumList: 1}).toArray();
     console.log('company counts: ', test.length);
     console.log('theoretical album counts: ', test.reduce((acc, cur) => {
         return acc + cur.albumTotal;
@@ -323,7 +345,7 @@ async function inspect() {
         return acc;
     }, []);
 
-    const r = await db.collection('album').find({}).project({_id: 0, album_id: 1}).toArray();
+    const r = await db.collection(MONGO_ALBUM_COLLECTION).find({}).project({_id: 0, album_id: 1}).toArray();
     const rt = r.reduce((acc, cur) => {
         acc.push(cur.album_id);
         return acc;
