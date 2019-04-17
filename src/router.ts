@@ -201,6 +201,8 @@ router.get('/company_statistics/dates', async (ctx, next) => {
     return await next();
 });
 
+router.get('/get_track')
+
 export default router;
 
 if (require.main === module) {

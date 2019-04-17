@@ -1,6 +1,8 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 
+import { search } from '../lib/music-info-gatherer/src';
+
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
@@ -214,6 +216,10 @@ export default class Service {
         } catch (e) {
             return false;
         }
+    }
+
+    public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
+        const results = await search(songName, artistName);
     }
 }
 
