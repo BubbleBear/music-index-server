@@ -6,6 +6,7 @@ import { search } from '../lib/music-info-gatherer/src';
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
+import puppeteer from 'puppeteer';
 
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
@@ -219,7 +220,47 @@ export default class Service {
     }
 
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        const results = await search(songName, artistName);
+        try {
+            const results = await search(songName, artistName);
+
+            const bestMatches = Object.keys(results).reduce((acc, cur) => {
+                acc[cur] = (results as any)[cur][0] || null;
+
+                return acc;
+            }, {} as any);
+
+            Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
+                const browser = await puppeteer.launch({
+                    args: [
+                        '--proxy-server=127.0.0.1:6666',
+                    ],
+                });
+                
+                const t1 = Date.now() / 1000;
+                try {
+                    
+                    const page = await browser.newPage();
+                    await page.setCacheEnabled(true);
+                    await page.goto(bestMatches[matchKey].url, {
+                        timeout: 100000,
+                    });
+                    await page.screenshot({ path: path.join(__dirname, '../runtime', `${songName}_${artistName}_${matchKey}.png`) });
+                } catch (e) {
+                    console.log(e.message)
+                }
+
+                await browser.close();
+                const t2 = Date.now() / 1000;
+                console.log(matchKey, t2 - t1)
+            }));
+
+            return bestMatches;
+        } catch (e) {
+            const message = Array.isArray(e) ? e.map(v => v.message) : e.message;
+            console.log(message);
+
+            return null;
+        }
     }
 }
 

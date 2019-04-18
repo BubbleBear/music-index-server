@@ -3,18 +3,16 @@ import * as stream from 'stream';
 import Router from 'koa-router';
 import moment from 'moment';
 
-import Service from './service';
 import * as utils from './utils';
 
 const router = new Router();
-const service = new Service();
 
 router.get('/company/:companyId/detail', async (ctx, next) => {
     const params = ctx.params;
 
     const companyIds = [ params.companyId ];
 
-    const embeded = await service.findEmbededAlbums(companyIds);
+    const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
     ctx.body = {
         success: true,
@@ -26,7 +24,7 @@ router.get('/company/:companyId/detail', async (ctx, next) => {
 
 router.post('/cleanse_crawler_cache', async (ctx, next) => {
     ctx.body = {
-        success: await service.cleanseCrawlerCache(),
+        success: await ctx.service.cleanseCrawlerCache(),
     };
 
     return await next();
@@ -37,7 +35,7 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
 
     const companyIds = [ params.companyId ];
 
-    const embeded = await service.findEmbededAlbums(companyIds);
+    const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
     const company = embeded[0] || { albumList: [] };
 
@@ -101,7 +99,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         },
     };
 
-    const result = await service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
+    const result = await ctx.service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
 
     const dates = new Set();
 
@@ -155,7 +153,7 @@ router.post('/crawl', async (ctx, next) => {
 
     const app: any = ctx.app;
 
-    // const crawler = service.crawl(query.parallel_size, query.company_quant);
+    // const crawler = ctx.service.crawl(query.parallel_size, query.company_quant);
 
     // app.childProcessMap.crawler = crawler;
 
@@ -172,7 +170,7 @@ router.post('/terminate_crawling', async (ctx, next) => {
     const crawler = app.childProcessMap.crawler;
 
     ctx.body = {
-        success: service.kill(crawler),
+        success: ctx.service.kill(crawler),
     };
 
     return await next();
@@ -181,7 +179,7 @@ router.post('/terminate_crawling', async (ctx, next) => {
 router.post('/company_statistics', async (ctx, next) => {
     const body = ctx.request.body;
 
-    const result = await service.createCompanyStatistics(body.date);
+    const result = await ctx.service.createCompanyStatistics(body.date);
 
     ctx.body = {
         success: Boolean(result),
@@ -191,7 +189,7 @@ router.post('/company_statistics', async (ctx, next) => {
 });
 
 router.get('/company_statistics/dates', async (ctx, next) => {
-    const dates = await service.getStatisticsDates();
+    const dates = await ctx.service.getStatisticsDates();
 
     ctx.body = {
         success: true,
@@ -201,7 +199,54 @@ router.get('/company_statistics/dates', async (ctx, next) => {
     return await next();
 });
 
-router.get('/get_track')
+router.get('/get_track', async (ctx, next) => {
+    const query = ctx.query;
+
+    ctx.body = {
+        success: true,
+        data: await ctx.service.searchTrack(query.song_name, query.artist_name),
+    };
+
+    return await next();
+});
+
+router.get('/get_tracks', async (ctx, next) => {
+    const query = ctx.query;
+
+    const companyIds = [ query.company_id ];
+
+    const embeded = await ctx.service.findEmbededAlbums(companyIds);
+
+    const tracks = embeded.reduce((tacc, company) => {
+        const albums = company.albumList.reduce((aacc: any, album: any) => {
+            const tr = album.list.map((track: any) => {
+                const s = track.singer[0];
+
+                return {
+                    songName: track.songname,
+                    artistName: s ? s.name : '',
+                };
+            });
+
+            return aacc.concat(tr);
+        }, []);
+
+        return tacc.concat(albums);
+    }, []);
+
+    console.log(tracks)
+
+    const results = await Promise.all(tracks.map(async (track: any) => {
+        return await ctx.service.searchTrack(track.songName, track.artistName);
+    }));
+
+    ctx.body = {
+        success: true,
+        data: results,
+    };
+
+    return await next();
+});
 
 export default router;
 

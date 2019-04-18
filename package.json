@@ -22,7 +22,9 @@
   "dependencies": {
     "@koa/cors": "^3.0.0",
     "axios": "^0.18.0",
+    "crypto-js": "^3.1.9-1",
     "ioredis": "^4.9.0",
+    "jsdom": "^14.0.0",
     "koa": "^2.7.0",
     "koa-bodyparser": "^4.2.1",
     "koa-router": "^7.4.0",
@@ -30,10 +32,12 @@
     "moment": "^2.24.0",
     "mongodb": "^3.2.2",
     "proxy-agent": "^3.1.0",
+    "puppeteer": "^1.14.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
     "@types/ioredis": "^4.0.10",
+    "@types/jsdom": "^12.2.3",
     "@types/koa": "^2.0.48",
     "@types/koa-bodyparser": "^4.2.2",
     "@types/koa-router": "^7.0.40",
@@ -41,6 +45,7 @@
     "@types/koa__cors": "^2.2.3",
     "@types/mongodb": "^3.1.22",
     "@types/node": "^11.13.0",
+    "@types/puppeteer": "^1.12.3",
     "supervisor": "^0.12.0",
     "ts-node": "^8.0.3",
     "typescript": "^3.4.2"
