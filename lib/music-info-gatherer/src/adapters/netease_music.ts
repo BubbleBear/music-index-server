@@ -2,6 +2,7 @@ import AbstractAdapter, { SearchOptions, SearchReturn } from './abstract';
 import { encrypt } from '../lib/netease_cypher';
 
 import axios, { AxiosRequestConfig } from 'axios';
+import ProxyAgent from 'proxy-agent';
 
 export default class NeteaseMusicAdapter extends AbstractAdapter {
     private async fetch({ url, method, data }: AxiosRequestConfig): Promise<any> {
@@ -11,6 +12,10 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
             responseType: 'json',
             baseURL: 'https://music.163.com/',
             data,
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36',
+            },
+            httpsAgent: new ProxyAgent('http://localhost:6666'),
         });
     }
 
@@ -46,6 +51,8 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
             };
         });
 
+        console.log('netease', response.status);
+
         return await Promise.all<SearchReturn>(results);
     }
 
@@ -62,14 +69,14 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
         const response = await this.fetch({ url: `/weapi/v1/resource/comments/R_SO_4_${songId}?csrf_token=`, data: postDataStr});
 
-        return response.data.total
+        return response.data.total;
     }
 }
 
 if (require.main === module) {
     !async function () {
         const a = new NeteaseMusicAdapter();
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
+        const r = await a.search({ songName: '一直这样吧', artistName: '王宇鹏' });
         console.dir(r, {
             depth: 4,
         })

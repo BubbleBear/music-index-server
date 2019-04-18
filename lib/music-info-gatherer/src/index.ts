@@ -37,7 +37,7 @@ export async function search(songName: string, artistName: string) {
     await Promise.all([
         retry(async () => results.itunes = await itunes.search(p), 5),
         retry(async () => results.kkbox = await kkbox.search(p), 5),
-        // retry(async () => results.netease = await netease.search(p), 5),
+        retry(async () => results.netease = await netease.search(p), 5),
         retry(async () => results.qq = await qq.search(p), 5),
         retry(async () => results.spotify = await spotify.search(p), 5),
         // retry(async () => results.youtube = await youtube.search(p), 5),

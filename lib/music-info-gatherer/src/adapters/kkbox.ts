@@ -3,6 +3,7 @@ import { trim } from '../lib/utils';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import { JSDOM } from 'jsdom';
+import { tify } from 'chinese-conv';
 
 export default class KkboxAdapter extends AbstractAdapter {
     private async fetch({ url }: AxiosRequestConfig) {
@@ -29,14 +30,14 @@ export default class KkboxAdapter extends AbstractAdapter {
             const albumName = (aa[1] as any).title;
 
             return {
-                name: trim(songName!, { pattern: ' \n' }),
+                name: tify(trim(songName!, { pattern: ' \n' })),
                 artists: [
                     {
-                        name: artistName,
+                        name: tify(artistName),
                     },
                 ],
                 album: {
-                    name: albumName,
+                    name: tify(albumName),
                 },
                 url,
             };
@@ -47,7 +48,7 @@ export default class KkboxAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new KkboxAdapter();
-        const r = await a.search({ songName: 'One Man\'s Dream', artistName: 'Yanni' });
+        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
         console.log(r)
     }()
 }

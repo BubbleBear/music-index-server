@@ -1,12 +1,15 @@
 import * as stream from 'stream';
 import * as path from 'path';
 
+import { list2csv, filterUndefinedAndEmpty } from './utils';
+
 import Router from 'koa-router';
 import moment from 'moment';
-
-import * as utils from './utils';
+import plimit from 'p-limit';
 
 const router = new Router();
+
+const limit = plimit(10);
 
 router.get('/company/:companyId/detail', async (ctx, next) => {
     const params = ctx.params;
@@ -59,7 +62,7 @@ router.get('/csv/music_index_detail/:companyId', async (ctx, next) => {
         return acc;
     }, []);
 
-    const csv = utils.list2csv(formatted, {
+    const csv = list2csv(formatted, {
         companyName: '唱片公司',
         companyId: '唱片公司ID',
         albumName: '专辑名',
@@ -100,7 +103,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         },
     };
 
-    const result = await ctx.service.findCompanyStatistics(utils.filterUndefinedAndEmpty(conditions));
+    const result = await ctx.service.findCompanyStatistics(filterUndefinedAndEmpty(conditions));
 
     const dates = new Set();
 
@@ -125,7 +128,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
         headerMap[date] = date;
     });
 
-    const csv = utils.list2csv(statistics, headerMap);
+    const csv = list2csv(statistics, headerMap);
 
     const rs = new stream.Readable({
         read() {},
@@ -205,14 +208,14 @@ router.get('/get_track', async (ctx, next) => {
 
     const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name)
 
-    Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
-        if (bestMatches[matchKey]) {
-            await ctx.service.screenShot(
-                bestMatches[matchKey].url,
-                path.join(__dirname, '../runtime', `${query.song_name}_${query.artist_name}_${matchKey}.png`),
-            );
-        }
-    }));
+    // Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
+    //     if (bestMatches[matchKey]) {
+    //         await ctx.service.screenShot(
+    //             bestMatches[matchKey].url,
+    //             path.join(__dirname, '../runtime', `${query.song_name}_${query.artist_name}_${matchKey}.png`),
+    //         );
+    //     }
+    // }));
 
     ctx.body = {
         success: true,
@@ -246,13 +249,27 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    const results = await Promise.all(tracks.map(async (track: any) => {
-        return await ctx.service.searchTrack(track.songName, track.artistName);
-    }));
+    Promise.all(
+        tracks.map(
+            (track: any) => {
+                return limit(async () => {
+                    return {
+                        name: track.songName,
+                        data: await ctx.service.searchTrack(track.songName, track.artistName),
+                    };
+                });
+            }
+        )
+    )
+    .then(async (result) => {
+        const fs = require('fs');
+        const ws = fs.createWriteStream('x.json')
+        ws.write(JSON.stringify(result))
+        ws.end()
+    })
 
     ctx.body = {
         success: true,
-        data: results,
     };
 
     return await next();

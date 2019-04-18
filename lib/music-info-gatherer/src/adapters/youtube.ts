@@ -2,6 +2,7 @@ import AbstractAdapter, { SearchOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
+import { tify } from 'chinese-conv';
 
 export default class YoutubeAdapter extends AbstractAdapter {
     private async fetch({ url }: AxiosRequestConfig) {
@@ -36,9 +37,9 @@ export default class YoutubeAdapter extends AbstractAdapter {
             const views = viewsString ? viewsString.replace(/,/g, '') : null;
 
             return {
-                name: v.title.simpleText,
-                artists: null,
-                album: null,
+                name: tify(v.title.simpleText),
+                artists: [],
+                album: {},
                 views,
                 url: `https://www.youtube.com/watch?v=${v.videoId}`,
             };

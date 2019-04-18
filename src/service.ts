@@ -6,7 +6,7 @@ import { search } from '../lib/music-info-gatherer/src';
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
-import puppeteer from 'puppeteer';
+// import puppeteer from 'puppeteer';
 
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
@@ -17,24 +17,24 @@ export default class Service {
 
     redis: Redis.Redis;
 
-    browser!: puppeteer.Browser;
+    // browser!: puppeteer.Browser;
 
     private _client: Promise<MongoClient>;
 
     private db!: Db;
 
-    private _browser: Promise<puppeteer.Browser>;
+    // private _browser: Promise<puppeteer.Browser>;
 
     constructor() {
         this._client = mongo.connect('mongodb://localhost:27017', {
             useNewUrlParser: true,
         });
 
-        this._browser = puppeteer.launch({
-            args: [
-                '--proxy-server=127.0.0.1:6666',
-            ]
-        });
+        // this._browser = puppeteer.launch({
+        //     args: [
+        //         '--proxy-server=127.0.0.1:6666',
+        //     ]
+        // });
 
         this.redis = new Redis({
             host: 'localhost',
@@ -51,7 +51,7 @@ export default class Service {
         this.client = await this._client;
         this.db = this.client.db('qq_music_crawler');
 
-        this.browser = await this._browser;
+        // this.browser = await this._browser;
     }
 
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
@@ -234,29 +234,45 @@ export default class Service {
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
         const results = await search(songName, artistName);
 
+        // console.log(songName.toLowerCase(), artistName.toLowerCase())
+
         const bestMatches = Object.keys(results).reduce((acc, cur) => {
-            acc[cur] = (results as any)[cur][0] || null;
+            // console.log('--', cur)
+            acc[cur] = (results as any)[cur].filter((v: any) => {
+                    // console.log('----', songName
+                        // ,v.name.toLowerCase().includes(songName.toLowerCase())
+                        // , v.artists.reduce((acc: boolean, cur: any) => {
+                        //     return acc || cur.name.toLowerCase().includes(artistName.toLowerCase());
+                        // }, false))
+
+                    return v.name.toLowerCase().includes(songName.toLowerCase()) && v.artists.reduce((acc: boolean, cur: any) => {
+                        // console.log('------', cur.name.toLowerCase(), cur.name.toLowerCase().includes(artistName.toLowerCase()))
+                        return acc || cur.name.toLowerCase().includes(artistName.toLowerCase());
+                    }, false);
+                })[0] || null;
 
             return acc;
         }, {} as any);
 
+        console.log(songName, artistName);
+
         return bestMatches;
     }
 
-    public async screenShot(url: string, path: string) {
-        await this.sync();
+    // public async screenShot(url: string, path: string) {
+    //     await this.sync();
         
-        try {
-            const page = await this.browser.newPage();
-            await page.setCacheEnabled(true);
-            await page.goto(url, {
-                timeout: 100000,
-            });
-            await page.screenshot({ path });
-        } catch (e) {
-            console.log(e.message)
-        }
-    }
+    //     try {
+    //         const page = await this.browser.newPage();
+    //         await page.setCacheEnabled(true);
+    //         await page.goto(url, {
+    //             timeout: 100000,
+    //         });
+    //         await page.screenshot({ path });
+    //     } catch (e) {
+    //         console.log(e.message)
+    //     }
+    // }
 
 }
 

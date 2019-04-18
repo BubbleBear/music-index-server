@@ -12,7 +12,7 @@ export default class ItunesAdapter extends AbstractAdapter {
     }
 
     public async search(options: SearchOptions) {
-        const response = await this.fetch({ url: `/search?term=${encodeURIComponent(options.songName)}&contry=CN&media=music&attribute=songTerm&limit=10` });
+        const response = await this.fetch({ url: `/search?term=${encodeURIComponent(options.songName)}&contry=CN&media=music&attribute=songTerm&limit=10lang=zh_cn` });
 
         return response.data.results.map((v: any) => {
             return {
@@ -34,7 +34,7 @@ export default class ItunesAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new ItunesAdapter();
-        const r = await a.search({ songName: '好心分手', artistName: 'Candy Lo' });
+        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
 
         console.dir(r, {
             depth: null,

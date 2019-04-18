@@ -22,6 +22,7 @@
   "dependencies": {
     "@koa/cors": "^3.0.0",
     "axios": "^0.18.0",
+    "chinese-conv": "^1.0.1",
     "crypto-js": "^3.1.9-1",
     "ioredis": "^4.9.0",
     "jsdom": "^14.0.0",
@@ -31,8 +32,8 @@
     "koa-static": "^5.0.0",
     "moment": "^2.24.0",
     "mongodb": "^3.2.2",
+    "p-limit": "^2.2.0",
     "proxy-agent": "^3.1.0",
-    "puppeteer": "^1.14.0",
     "winston": "^3.2.1"
   },
   "devDependencies": {
