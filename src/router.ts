@@ -1,4 +1,5 @@
 import * as stream from 'stream';
+import * as path from 'path';
 
 import Router from 'koa-router';
 import moment from 'moment';
@@ -202,9 +203,20 @@ router.get('/company_statistics/dates', async (ctx, next) => {
 router.get('/get_track', async (ctx, next) => {
     const query = ctx.query;
 
+    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name)
+
+    Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
+        if (bestMatches[matchKey]) {
+            await ctx.service.screenShot(
+                bestMatches[matchKey].url,
+                path.join(__dirname, '../runtime', `${query.song_name}_${query.artist_name}_${matchKey}.png`),
+            );
+        }
+    }));
+
     ctx.body = {
         success: true,
-        data: await ctx.service.searchTrack(query.song_name, query.artist_name),
+        data: bestMatches,
     };
 
     return await next();
@@ -233,8 +245,6 @@ router.get('/get_tracks', async (ctx, next) => {
 
         return tacc.concat(albums);
     }, []);
-
-    console.log(tracks)
 
     const results = await Promise.all(tracks.map(async (track: any) => {
         return await ctx.service.searchTrack(track.songName, track.artistName);

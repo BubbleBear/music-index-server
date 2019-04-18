@@ -232,31 +232,15 @@ export default class Service {
     }
 
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        try {
-            const results = await search(songName, artistName);
+        const results = await search(songName, artistName);
 
-            const bestMatches = Object.keys(results).reduce((acc, cur) => {
-                acc[cur] = (results as any)[cur][0] || null;
+        const bestMatches = Object.keys(results).reduce((acc, cur) => {
+            acc[cur] = (results as any)[cur][0] || null;
 
-                return acc;
-            }, {} as any);
+            return acc;
+        }, {} as any);
 
-            Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
-                if (bestMatches[matchKey]) {
-                    await this.screenShot(
-                        bestMatches[matchKey].url,
-                        path.join(__dirname, '../runtime', `${songName}_${artistName}_${matchKey}.png`),
-                    );
-                }
-            }));
-
-            return bestMatches;
-        } catch (e) {
-            const message = Array.isArray(e) ? e.map(v => v.message) : e.message;
-            console.log(songName, message);
-
-            return null;
-        }
+        return bestMatches;
     }
 
     public async screenShot(url: string, path: string) {
