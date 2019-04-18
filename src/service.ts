@@ -17,14 +17,24 @@ export default class Service {
 
     redis: Redis.Redis;
 
-    private promise: Promise<MongoClient>;
+    browser!: puppeteer.Browser;
+
+    private _client: Promise<MongoClient>;
 
     private db!: Db;
 
+    private _browser: Promise<puppeteer.Browser>;
+
     constructor(options?: any) {
-        this.promise = mongo.connect('mongodb://localhost:27017', Object.assign({
+        this._client = mongo.connect('mongodb://localhost:27017', Object.assign({
             useNewUrlParser: true,
         }, options));
+
+        this._browser = puppeteer.launch({
+            args: [
+                '--proxy-server=127.0.0.1:6666',
+            ]
+        });
 
         this.redis = new Redis({
             host: 'localhost',
@@ -38,8 +48,10 @@ export default class Service {
             return;
         }
 
-        this.client = await this.promise;
+        this.client = await this._client;
         this.db = this.client.db('qq_music_crawler');
+
+        this.browser = await this._browser;
     }
 
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
@@ -230,16 +242,9 @@ export default class Service {
             }, {} as any);
 
             Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
-                const browser = await puppeteer.launch({
-                    args: [
-                        '--proxy-server=127.0.0.1:6666',
-                    ],
-                });
-                
                 const t1 = Date.now() / 1000;
                 try {
-                    
-                    const page = await browser.newPage();
+                    const page = await this.browser.newPage();
                     await page.setCacheEnabled(true);
                     await page.goto(bestMatches[matchKey].url, {
                         timeout: 100000,
@@ -249,7 +254,6 @@ export default class Service {
                     console.log(e.message)
                 }
 
-                await browser.close();
                 const t2 = Date.now() / 1000;
                 console.log(matchKey, t2 - t1)
             }));
