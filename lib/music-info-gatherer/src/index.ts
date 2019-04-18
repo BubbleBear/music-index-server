@@ -14,7 +14,7 @@ const qq = new QQMusicAdapter;
 const spotify = new SpotifyAdapter;
 const youtube = new YoutubeAdapter;
 
-async function retry(fn: Function, times: number = 5) {
+async function retry(tag: string, fn: Function, times: number = 5) {
     const errorBuffer = [];
 
     while (times--) {
@@ -25,7 +25,7 @@ async function retry(fn: Function, times: number = 5) {
         }
     }
 
-    console.log(errorBuffer.map(e => e.message));
+    console.log(tag, errorBuffer.map(e => e.message));
     return [];
 }
 
@@ -35,12 +35,12 @@ export async function search(songName: string, artistName: string) {
     const results: any = {};
 
     await Promise.all([
-        retry(async () => results.itunes = await itunes.search(p), 5),
-        retry(async () => results.kkbox = await kkbox.search(p), 5),
-        retry(async () => results.netease = await netease.search(p), 5),
-        retry(async () => results.qq = await qq.search(p), 5),
-        retry(async () => results.spotify = await spotify.search(p), 5),
-        // retry(async () => results.youtube = await youtube.search(p), 5),
+        retry('itunes', async () => results.itunes = await itunes.search(p), 5),
+        retry('kkbox', async () => results.kkbox = await kkbox.search(p), 5),
+        retry('netease', async () => results.netease = await netease.search(p), 5),
+        retry('qq', async () => results.qq = await qq.search(p), 5),
+        retry('spotify', async () => results.spotify = await spotify.search(p), 5),
+        // retry('youtube', async () => results.youtube = await youtube.search(p), 5),
     ]);
 
     return results;
