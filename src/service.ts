@@ -25,10 +25,10 @@ export default class Service {
 
     private _browser: Promise<puppeteer.Browser>;
 
-    constructor(options?: any) {
-        this._client = mongo.connect('mongodb://localhost:27017', Object.assign({
+    constructor() {
+        this._client = mongo.connect('mongodb://localhost:27017', {
             useNewUrlParser: true,
-        }, options));
+        });
 
         this._browser = puppeteer.launch({
             args: [
@@ -242,30 +242,38 @@ export default class Service {
             }, {} as any);
 
             Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
-                const t1 = Date.now() / 1000;
-                try {
-                    const page = await this.browser.newPage();
-                    await page.setCacheEnabled(true);
-                    await page.goto(bestMatches[matchKey].url, {
-                        timeout: 100000,
-                    });
-                    await page.screenshot({ path: path.join(__dirname, '../runtime', `${songName}_${artistName}_${matchKey}.png`) });
-                } catch (e) {
-                    console.log(e.message)
+                if (bestMatches[matchKey]) {
+                    await this.screenShot(
+                        bestMatches[matchKey].url,
+                        path.join(__dirname, '../runtime', `${songName}_${artistName}_${matchKey}.png`),
+                    );
                 }
-
-                const t2 = Date.now() / 1000;
-                console.log(matchKey, t2 - t1)
             }));
 
             return bestMatches;
         } catch (e) {
             const message = Array.isArray(e) ? e.map(v => v.message) : e.message;
-            console.log(message);
+            console.log(songName, message);
 
             return null;
         }
     }
+
+    public async screenShot(url: string, path: string) {
+        await this.sync();
+        
+        try {
+            const page = await this.browser.newPage();
+            await page.setCacheEnabled(true);
+            await page.goto(url, {
+                timeout: 100000,
+            });
+            await page.screenshot({ path });
+        } catch (e) {
+            console.log(e.message)
+        }
+    }
+
 }
 
 if (require.main === module) {
