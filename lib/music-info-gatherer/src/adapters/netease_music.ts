@@ -20,6 +20,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36',
             },
             httpsAgent: new ProxyAgent(this.proxy),
+            timeout: 5000,
         });
     }
 
@@ -36,8 +37,6 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
         const response = await this.fetch({ url: '/weapi/cloudsearch/get/web?csrf_token=', data: postDataStr});
 
-        console.log(response.data)
-        
         const results = response.data.result.songs.map(async (v: any) => {
             return {
                 name: v.name,
@@ -56,8 +55,6 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
                 comments: await this.commentCount(v.id),
             };
         });
-
-        console.log('netease', response.status);
 
         return await Promise.all<SearchReturn>(results);
     }
@@ -81,7 +78,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function () {
-        const a = new NeteaseMusicAdapter();
+        const a = new NeteaseMusicAdapter({ proxy: 'http://183.129.244.16:14883' });
         const r = await a.search({ songName: '一直这样吧', artistName: '王宇鹏' });
         console.dir(r, {
             depth: 4,

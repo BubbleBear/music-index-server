@@ -1,4 +1,5 @@
 import * as fs from 'fs';
+import * as path from 'path';
 
 import ItunesAdapter from './adapters/itunes';
 import KkboxAdapter from './adapters/kkbox';
@@ -6,50 +7,95 @@ import NeteaseMusicAdapter from './adapters/netease_music';
 import QQMusicAdapter from './adapters/qq_music';
 import SpotifyAdapter from './adapters/spotify';
 import YoutubeAdapter from './adapters/youtube';
+import { Adapter } from './adapters/abstract';
+import { info, warn, error } from './logger';
 
-const itunes = new ItunesAdapter;
-const kkbox = new KkboxAdapter;
-const netease = new NeteaseMusicAdapter;
-const qq = new QQMusicAdapter;
-const spotify = new SpotifyAdapter;
-const youtube = new YoutubeAdapter;
+import moment from 'moment';
 
-async function retry(tag: string, fn: Function, times: number = 5) {
-    const errorBuffer = [];
+global.info = info;
+global.warn = warn;
+global.error = error;
 
-    while (times--) {
-        try {
-            return await fn();
-        } catch (e) {
-            errorBuffer.push(e);
-        }
-    }
+const Adapters = {
+    itunes: ItunesAdapter,
+    kkbox: KkboxAdapter,
+    netease: NeteaseMusicAdapter,
+    qq: QQMusicAdapter,
+    spotify: SpotifyAdapter,
+    youtube: YoutubeAdapter,
+};
 
-    console.log(tag, errorBuffer.map(e => e.message));
-    return [];
+export interface GathererOptions {
+    proxies: {
+        itunes?: string,
+        kkbox?: string,
+        netease?: string,
+        qq?: string,
+        spotify?: string,
+        youtube?: string,
+    };
 }
 
-export async function search(songName: string, artistName: string) {
-    const p = { songName, artistName };
+export class Gatherer {
+    private adapters: { [prop in keyof typeof Adapters]: Adapter } = {} as any;
 
-    const results: any = {};
+    constructor(options: GathererOptions) {
+        Object.keys(Adapters).forEach((v) => {
+            const tv: keyof typeof Adapters = v as keyof typeof Adapters;
+            this.adapters[tv] = new Adapters[tv]({ proxy: options.proxies[tv] });
+        });
+    }
 
-    await Promise.all([
-        retry('itunes', async () => results.itunes = await itunes.search(p), 5),
-        retry('kkbox', async () => results.kkbox = await kkbox.search(p), 5),
-        // retry('netease', async () => results.netease = await netease.search(p), 5),
-        retry('qq', async () => results.qq = await qq.search(p), 5),
-        retry('spotify', async () => results.spotify = await spotify.search(p), 5),
-        retry('youtube', async () => results.youtube = await youtube.search(p), 5),
-    ]);
+    public async retry(tag: string, fn: Function, times: number = 5) {
+        while (times--) {
+            try {
+                return await fn();
+            } catch (e) {
+                global.error({
+                    module: 'music-info-gatherer',
+                    adapter: tag,
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    error: {
+                        message: e.message,
+                        stack: e.stack,
+                    },
+                });
+            }
+        }
+    
+        return [];
+    }
 
-    return results;
+    public async search(songName: string, artistName: string) {
+        const p = { songName, artistName };
+    
+        const results: any = {};
+    
+        await Promise.all(Object.keys(this.adapters).map(v => {
+            const tv: keyof typeof Adapters = v as keyof typeof Adapters;
+            return this.retry(tv, async () => results[tv] = await this.adapters[tv].search(p), 5);
+        }))
+    
+        return results;
+    }
 }
 
 if (require.main === module) {
+    let proxy = undefined;
+    proxy = 'http://' + '183.129.244.16' + ':' + '15971';
+
     !async function() {
-        const r = await search('好心分手', '卢巧音');
-        const ws = fs.createWriteStream('x.json');
+        const gather = new Gatherer({
+            proxies: {
+                itunes: proxy,
+                netease: proxy,
+                qq: proxy,
+                kkbox: proxy,
+            },
+        });
+
+        const r = await gather.search('大碗宽面', '吴亦凡');
+        const ws = fs.createWriteStream(path.join(__dirname, '../../../v.json')); 
         ws.write(JSON.stringify(r));
         ws.end();
     }()

@@ -18,6 +18,7 @@ export default class KkboxAdapter extends AbstractAdapter {
             baseURL: 'https://www.kkbox.com',
             responseType: 'document',
             httpsAgent: new ProxyAgent(this.proxy),
+            timeout: 5000,
         });
     }
 
@@ -53,7 +54,7 @@ export default class KkboxAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function() {
-        const a = new KkboxAdapter();
+        const a = new KkboxAdapter({ proxy: `http://183.129.244.16:11344` });
         const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
         console.log(r)
     }()

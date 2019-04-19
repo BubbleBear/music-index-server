@@ -1,8 +1,10 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as util from 'util';
 
-import { search } from '../lib/music-info-gatherer/src';
+import { Gatherer } from '../lib/music-info-gatherer/src';
+import { normalizeString } from './utils';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
@@ -12,6 +14,8 @@ import moment from 'moment';
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
+
+const REDIS_DOWNLOADING_FILE_SET_KEY = 'downloading.file';
 
 const REDIS_CACHED_FILE_MAP_KEY = 'cached.file';
 
@@ -234,30 +238,40 @@ export default class Service {
         }
     }
 
-    public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        const results = await search(songName, artistName);
+    private async initGather() {
+        const proxy = undefined;
 
-        // console.log(songName.toLowerCase(), artistName.toLowerCase())
+        return new Gatherer({
+            proxies: {
+            },
+        });
+    }
+
+    public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
+        const gather = await this.initGather();
+        const results = await gather.search(songName, artistName);
+
+        console.log(songName, artistName)
 
         const bestMatches = Object.keys(results).reduce((acc, cur) => {
-            // console.log('--', cur)
+            console.log('--', cur)
             acc[cur] = (results as any)[cur].filter((v: any) => {
-                    // console.log('----', songName
-                        // ,v.name.toLowerCase().includes(songName.toLowerCase())
-                        // , v.artists.reduce((acc: boolean, cur: any) => {
-                        //     return acc || cur.name.toLowerCase().includes(artistName.toLowerCase());
-                        // }, false))
+                    console.log('----', songName
+                        ,normalizeString(v.name).includes(normalizeString(songName))
+                        , v.artists.reduce((acc: boolean, cur: any) => {
+                            return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                        }, false))
 
-                    return v.name.toLowerCase().includes(songName.toLowerCase()) && v.artists.reduce((acc: boolean, cur: any) => {
-                        // console.log('------', cur.name.toLowerCase(), cur.name.toLowerCase().includes(artistName.toLowerCase()))
-                        return acc || cur.name.toLowerCase().includes(artistName.toLowerCase());
+                    return normalizeString(v.name).includes(normalizeString(songName)) && v.artists.reduce((acc: boolean, cur: any) => {
+                        console.log('------', cur.name, normalizeString(cur.name).includes(normalizeString(artistName)))
+                        return acc || normalizeString(cur.name).includes(normalizeString(artistName));
                     }, false);
                 })[0] || null;
 
             return acc;
         }, {} as any);
 
-        console.log(songName, artistName);
+        console.log(songName, '#########', artistName);
 
         return bestMatches;
     }
@@ -278,15 +292,48 @@ export default class Service {
     // }
 
     public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+        const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+
+        if (cached) {
+            return;
+        }
+
+        await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+
         const ws = fs.createWriteStream(filepath);
+        ws.write('\ufeff');
         ws.write(content);
         ws.end();
+
+        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
 
         await this.redis.hset(REDIS_CACHED_FILE_MAP_KEY, redisKey, filepath);
     }
 
+    public async listDownloadingFiles() {
+        return await this.redis.smembers(REDIS_DOWNLOADING_FILE_SET_KEY);
+    }
+
     public async listCachedFiles() {
         return await this.redis.hkeys(REDIS_CACHED_FILE_MAP_KEY);
+    }
+
+    public async deleteCachedFile(redisKey: string) {
+        try {
+            const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+            filepath && await util.promisify(fs.unlink)(filepath);
+            await this.redis.hdel(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+        } catch (e) {
+            global.error({
+                module: 'main',
+                method: 'deleteCachedFile',
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                error: {
+                    message: e.message,
+                    stack: e.stack,
+                },
+            });
+        }
     }
 
     public async openFileStream(redisKey: string) {

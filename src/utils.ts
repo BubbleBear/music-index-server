@@ -28,3 +28,9 @@ export function filterUndefinedAndEmpty(obj: object | any[] | any): any {
 
     return obj;
 }
+
+export function normalizeString(target: string) {
+    const result = target.toLowerCase().replace(/_/g, '-');
+
+    return result;
+}

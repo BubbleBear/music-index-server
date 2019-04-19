@@ -2,11 +2,16 @@ import * as path from 'path';
 
 import Service from './service';
 import router from './router';
+import { info, warn, error } from './logger';
 
 import Koa from 'koa';
 import bodyparser from 'koa-bodyparser';
 import serve from 'koa-static';
 import cors from '@koa/cors';
+
+global.info = info;
+global.warn = warn;
+global.error = error;
 
 const app = new Koa();
 

@@ -6,7 +6,6 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 import Router from 'koa-router';
 import moment from 'moment';
 import plimit from 'p-limit';
-import { stringify } from 'querystring';
 
 const router = new Router();
 
@@ -250,7 +249,7 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    await Promise.all<any>(
+    Promise.all<any>(
         tracks.map(
             (track: any) => {
                 return limit(async () => {
@@ -263,6 +262,13 @@ router.get('/get_tracks', async (ctx, next) => {
         )
     )
     .then(async (result) => {
+        if (!result || !Array.isArray(result) || result.length === 0) {
+            const csv = '公司不存在或公司没有歌曲';
+            await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
+
+            return;
+        }
+
         const headerMap = result.reduce((acc: any, cur: any) => {
             acc[cur.name] = cur.name;
             return acc;
@@ -321,10 +327,36 @@ router.get('/list_files', async (ctx, next) => {
     return await next();
 });
 
+router.get('/list_downloading', async (ctx, next) => {
+    ctx.body = {
+        success: true,
+        data: await ctx.service.listDownloadingFiles(),
+    };
+
+    return await next();
+});
+
+router.get('/delete_cached_file', async (ctx, next) => {
+    const query = ctx.query;
+
+    await ctx.service.deleteCachedFile(query.filename);
+
+    ctx.body = {
+        success: true,
+    };
+
+    return await next();
+})
+
 router.get('/download', async (ctx, next) => {
     const query = ctx.query;
 
     const rs = await ctx.service.openFileStream(query.filename);
+
+    ctx.set({
+        'Content-Type': 'application/octet-stream;charset=utf8',
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}.csv`,
+    });
 
     ctx.body = rs;
 
