@@ -21,6 +21,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
                 connection: 'keep-alive',
             },
             httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
+            timeout: 20000,
         });
     }
 

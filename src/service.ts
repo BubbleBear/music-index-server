@@ -1,6 +1,7 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
+import * as util from 'util';
 
 import { Gatherer } from '../lib/music-info-gatherer/src';
 
@@ -320,6 +321,24 @@ export default class Service {
 
     public async listCachedFiles() {
         return await this.redis.hkeys(REDIS_CACHED_FILE_MAP_KEY);
+    }
+
+    public async deleteCachedFile(redisKey: string) {
+        try {
+            const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+            filepath && await util.promisify(fs.unlink)(filepath);
+            await this.redis.hdel(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+        } catch (e) {
+            global.error({
+                module: 'main',
+                method: 'deleteCachedFile',
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                error: {
+                    message: e.message,
+                    stack: e.stack,
+                },
+            });
+        }
     }
 
     public async openFileStream(redisKey: string) {

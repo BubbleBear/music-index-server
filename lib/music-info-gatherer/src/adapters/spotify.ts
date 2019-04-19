@@ -15,6 +15,7 @@ export default class SpotifyAdapter extends AbstractAdapter {
             url,
             headers,
             httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
+            timeout: 10000,
         });
     }
 
