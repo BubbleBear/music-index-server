@@ -267,7 +267,7 @@ export default class Service {
             return acc;
         }, {} as any);
 
-        console.log(songName, artistName);
+        console.log(songName, '#########', artistName);
 
         return bestMatches;
     }

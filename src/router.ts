@@ -249,7 +249,7 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    await Promise.all<any>(
+    Promise.all<any>(
         tracks.map(
             (track: any) => {
                 return limit(async () => {
@@ -262,6 +262,13 @@ router.get('/get_tracks', async (ctx, next) => {
         )
     )
     .then(async (result) => {
+        if (!result || !Array.isArray(result) || result.length === 0) {
+            const csv = '公司不存在或公司没有歌曲';
+            await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
+
+            return;
+        }
+
         const headerMap = result.reduce((acc: any, cur: any) => {
             acc[cur.name] = cur.name;
             return acc;

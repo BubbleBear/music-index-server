@@ -39,10 +39,13 @@ export default class YoutubeAdapter extends AbstractAdapter {
             const viewsText = v.viewCountText.simpleText.match(/([\d,]*)/);
             const viewsString = viewsText ? viewsText[1] : null;
             const views = viewsString ? viewsString.replace(/,/g, '') : null;
+            let tmp = v.shortBylineText;
+            const artists = tmp.simpleText ? tmp.simpleText
+                : tmp.runs.map((v: any) => v.text);
 
             return {
                 name: tify(v.title.simpleText),
-                artists: [],
+                artists,
                 album: {},
                 views,
                 url: `https://www.youtube.com/watch?v=${v.videoId}`,
@@ -54,7 +57,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new YoutubeAdapter();
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
+        const r = await a.search({ songName: 'Bonito Intro', artistName: 'Kero Kero Bonito' });
         console.dir(r, {
             depth: 4,
         })

@@ -61,7 +61,7 @@ export class Gather {
         await Promise.all([
             this.retry('itunes', async () => results.itunes = await this.adapters.itunes.search(p), 5),
             this.retry('kkbox', async () => results.kkbox = await this.adapters.kkbox.search(p), 5),
-            // this.retry('netease', async () => results.netease = await this.adapters.netease.search(p), 5),
+            this.retry('netease', async () => results.netease = await this.adapters.netease.search(p), 5),
             this.retry('qq', async () => results.qq = await this.adapters.qq.search(p), 5),
             this.retry('spotify', async () => results.spotify = await this.adapters.spotify.search(p), 5),
             this.retry('youtube', async () => results.youtube = await this.adapters.youtube.search(p), 5),
