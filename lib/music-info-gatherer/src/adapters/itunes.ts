@@ -1,13 +1,19 @@
-import AbstractAdapter, { SearchOptions } from './abstract';
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
+import ProxyAgent from 'proxy-agent';
 
 export default class ItunesAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+
     private async fetch({ url, method = 'get' }: AxiosRequestConfig) {
         return await axios({
             method,
             url,
             baseURL: 'https://itunes.apple.com',
+            httpsAgent: new ProxyAgent(this.proxy),
         });
     }
 

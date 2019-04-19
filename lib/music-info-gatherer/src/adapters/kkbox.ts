@@ -1,17 +1,23 @@
-import AbstractAdapter, { SearchOptions, SearchReturn } from './abstract';
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
 import { trim } from '../lib/utils';
 
 import axios, { AxiosRequestConfig } from 'axios';
+import ProxyAgent from 'proxy-agent';
 import { JSDOM } from 'jsdom';
 import { tify } from 'chinese-conv';
 
 export default class KkboxAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+    
     private async fetch({ url }: AxiosRequestConfig) {
         return await axios({
             method: 'get',
             url,
             baseURL: 'https://www.kkbox.com',
             responseType: 'document',
+            httpsAgent: new ProxyAgent(this.proxy),
         });
     }
 

@@ -1,10 +1,14 @@
-import AbstractAdapter, { SearchOptions } from './abstract';
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 import { tify } from 'chinese-conv';
 
 export default class YoutubeAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+
     private async fetch({ url }: AxiosRequestConfig) {
         return await axios({
             method: 'get',
@@ -16,7 +20,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
                 'x-youtube-client-version': '2.20190319',
                 connection: 'keep-alive',
             },
-            httpsAgent: new ProxyAgent(process.env.http_proxy || 'http://localhost:6666'),
+            httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
         });
     }
 

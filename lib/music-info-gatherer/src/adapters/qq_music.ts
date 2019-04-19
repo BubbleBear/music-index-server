@@ -1,13 +1,19 @@
-import AbstractAdapter, { SearchOptions, SearchReturn } from './abstract';
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
+import ProxyAgent from 'proxy-agent';
 
 export default class QQMusicAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+    
     private async fetch({ url, method = 'get' }: AxiosRequestConfig) {
         return await axios({
             method,
             url,
             baseURL: 'https://c.y.qq.com/',
+            httpsAgent: new ProxyAgent(this.proxy),
         });
     }
 

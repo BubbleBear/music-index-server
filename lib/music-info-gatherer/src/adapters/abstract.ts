@@ -1,3 +1,6 @@
+export interface AdapterOptions {
+    proxy?: string;
+}
 export interface SearchOptions {
     songName: string;
     artistName: string;
@@ -20,5 +23,11 @@ export interface Adapter {
 }
 
 export default abstract class AbstractAdapter implements Adapter {
+    protected proxy: string | undefined;
+
+    constructor(options: AdapterOptions) {
+        this.proxy = options.proxy;
+    };
+
     public async abstract search(options: SearchOptions): Promise<SearchReturn[]>;
 }

@@ -1,10 +1,14 @@
-import AbstractAdapter, { SearchOptions, SearchReturn } from './abstract';
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
 import { encrypt } from '../lib/netease_cypher';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 
 export default class NeteaseMusicAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+
     private async fetch({ url, method, data }: AxiosRequestConfig): Promise<any> {
         return await axios({
             method: method || 'post',
@@ -15,7 +19,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/73.0.3683.103 Safari/537.36',
             },
-            httpsAgent: new ProxyAgent('http://localhost:6666'),
+            httpsAgent: new ProxyAgent(this.proxy),
         });
     }
 
@@ -31,6 +35,8 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
         }, [] as string[]).join('&');
 
         const response = await this.fetch({ url: '/weapi/cloudsearch/get/web?csrf_token=', data: postDataStr});
+
+        console.log(response.data)
         
         const results = response.data.result.songs.map(async (v: any) => {
             return {

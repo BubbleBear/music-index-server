@@ -1,16 +1,20 @@
-import AbstractAdapter, { SearchOptions } from './abstract';
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 import { parseSetCookie } from '../lib/utils';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 
 export default class SpotifyAdapter extends AbstractAdapter {
+    constructor(options: AdapterOptions = {}) {
+        super(options);
+    }
+    
     private async fetch({ url, method = 'get', headers }: AxiosRequestConfig) {
         return await axios({
             method,
             url,
             headers,
-            httpsAgent: new ProxyAgent(process.env.http_proxy || 'http://localhost:6666'),
+            httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
         });
     }
 
