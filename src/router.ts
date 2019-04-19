@@ -6,6 +6,7 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 import Router from 'koa-router';
 import moment from 'moment';
 import plimit from 'p-limit';
+import { stringify } from 'querystring';
 
 const router = new Router();
 
@@ -249,7 +250,7 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    Promise.all(
+    await Promise.all<any>(
         tracks.map(
             (track: any) => {
                 return limit(async () => {
@@ -262,15 +263,70 @@ router.get('/get_tracks', async (ctx, next) => {
         )
     )
     .then(async (result) => {
-        const fs = require('fs');
-        const ws = fs.createWriteStream('x.json')
-        ws.write(JSON.stringify(result))
-        ws.end()
+        const headerMap = result.reduce((acc: any, cur: any) => {
+            acc[cur.name] = cur.name;
+            return acc;
+        }, { ' ': ' ' });
+        
+        const tunnels = Object.keys(result[0].data);
+        
+        const template = tunnels.reduce((acc: any, cur: any) => {
+            acc[cur] = {};
+        
+            return acc;
+        }, {});
+        
+        const map = result.reduce((acc, cur) => {
+            const d = cur.data;
+            Object.keys(d).forEach(k => {
+                switch (k) {
+                    case 'itunes': d[k] && (acc[k][d[k].name] = '存在'); break;
+                    case 'qq': d[k] && (acc[k][d[k].name] = d[k].comments); break;
+                    case 'netease': d[k] && (acc[k][d[k].name] = d[k].comments); break;
+                    case 'kkbox': d[k] && (acc[k][d[k].name] = '存在'); break;
+                    case 'spotify': d[k] && (acc[k][d[k].name] = '存在'); break;
+                    case 'youtube': d[k] && (acc[k][d[k].name] = d[k].views); break;
+                }
+            });
+        
+            return acc;
+        }, template);
+        
+        const list = Object.keys(map).reduce((acc: any, cur: any) => {
+            const entry = map[cur];
+            entry[' '] = cur;
+            acc.push(entry);
+        
+            return acc;
+        }, []);
+        
+        const csv = list2csv(list, headerMap).replace(/"undefined"/g, '"未找到"');
+
+        await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
     })
 
     ctx.body = {
         success: true,
     };
+
+    return await next();
+});
+
+router.get('/list_files', async (ctx, next) => {
+    ctx.body = {
+        success: true,
+        data: await ctx.service.listCachedFiles(),
+    };
+
+    return await next();
+});
+
+router.get('/download', async (ctx, next) => {
+    const query = ctx.query;
+
+    const rs = await ctx.service.openFileStream(query.filename);
+
+    ctx.body = rs;
 
     return await next();
 });

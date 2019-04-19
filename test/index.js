@@ -39,9 +39,9 @@ const list = Object.keys(map).reduce((acc, cur) => {
     return acc;
 }, []);
 
-const csv = list2csv(list, headerMap).replace(/"undefined"/g, '不存在');
+const csv = list2csv(list, headerMap).replace(/"undefined"/g, '"不存在"');
 
-const ws = fs.createWriteStream('x.txt');
+const ws = fs.createWriteStream('runtime/x.csv');
 ws.write(csv);
 ws.end();
 

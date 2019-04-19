@@ -70,6 +70,7 @@
     .input-wrap {
       font-size: 14px;
       color: #333;
+      margin: 5px;
     }
 
     .input-wrap span {
@@ -178,6 +179,52 @@
       </g>
     </svg>
   </div>
+
+  <header>查询歌曲</header>
+  <div class="main-wrap">
+    <div class="left">
+      <div>
+        <div class="title">单曲查询</div>
+        <div class="input-wrap">
+          <span>歌曲名称:</span>
+          <input type="text" id="song-name" placeholder="请输入歌曲名称">
+        </div>
+        <div class="input-wrap">
+          <span>歌 手 名 :</span>
+          <input type="text" id="artist-name" placeholder="请输入歌手名称">
+        </div>
+        <div class="result"></div>
+      </div>
+      <button id="single-track" class="download">查询</button>
+    </div>
+    <div>
+      <div>
+        <div class="title">按公司id查询</div>
+        <div class="input-wrap">
+          <span>日期:</span>
+          <input type="text" id="com-id-for-tracks" placeholder="请输入公司ID">
+        </div>
+      </div>
+      <button class="download" id="multi-track">加入下载队列</button>
+    </div>
+  </div>
+  <div class="main-wrap">
+    <div class="title">已完成的下载</div>
+  </div>
+
+  <div id="loading">
+    <svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">
+      <g fill="none" fill-rule="evenodd">
+        <g transform="translate(1 1)" stroke-width="2">
+          <circle stroke-opacity=".5" cx="18" cy="18" r="18" />
+          <path d="M36 18c0-9.94-8.06-18-18-18">
+            <animateTransform attributeName="transform" type="rotate" from="0 18 18" to="360 18 18" dur=".7s"
+              repeatCount="indefinite" />
+          </path>
+        </g>
+      </g>
+    </svg>
+  </div>
 </body>
 <script src="https://cdn.bootcss.com/moment.js/2.24.0/moment.min.js"></script>
 <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
@@ -235,6 +282,21 @@
   }
   document.getElementById('dcb').onclick = downloadMD
   document.getElementById('ddb').onclick = downloadDL
+
+  document.getElementById('single-track').onclick = async () => {
+    document.getElementById('single-track').disabled = true;
+
+    const songName = document.querySelector('#song-name').value;
+    const artistName = document.querySelector('#artist-name').value;
+  
+    const request = new Request(`/api/v1/get_track?song_name=${songName}&artist_name=${artistName}`);
+    const response = await fetch(request);
+    const result = response.json();
+
+    console.log(result)
+
+    document.getElementById('single-track').disabled = false;
+  }
 </script>
 
 </html>

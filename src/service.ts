@@ -1,5 +1,6 @@
 import * as cp from 'child_process';
 import * as path from 'path';
+import * as fs from 'fs';
 
 import { search } from '../lib/music-info-gatherer/src';
 
@@ -11,6 +12,8 @@ import moment from 'moment';
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
+
+const REDIS_CACHED_FILE_MAP_KEY = 'cached.file';
 
 export default class Service {
     client!: MongoClient;
@@ -259,7 +262,7 @@ export default class Service {
         return bestMatches;
     }
 
-    // public async screenShot(url: string, path: string) {
+    // public async screenShot(url: string, filepath: string) {
     //     await this.sync();
         
     //     try {
@@ -268,11 +271,29 @@ export default class Service {
     //         await page.goto(url, {
     //             timeout: 100000,
     //         });
-    //         await page.screenshot({ path });
+    //         await page.screenshot({ path: filepath });
     //     } catch (e) {
     //         console.log(e.message)
     //     }
     // }
+
+    public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+        const ws = fs.createWriteStream(filepath);
+        ws.write(content);
+        ws.end();
+
+        await this.redis.hset(REDIS_CACHED_FILE_MAP_KEY, redisKey, filepath);
+    }
+
+    public async listCachedFiles() {
+        return await this.redis.hkeys(REDIS_CACHED_FILE_MAP_KEY);
+    }
+
+    public async openFileStream(redisKey: string) {
+        const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+
+        return fs.createReadStream(filepath!);
+    }
 
 }
 

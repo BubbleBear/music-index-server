@@ -4,3 +4,4 @@ logs/
 .vscode/
 **/.DS_Store
 runtime/
+dump.rdb

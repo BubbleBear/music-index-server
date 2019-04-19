@@ -37,10 +37,10 @@ export async function search(songName: string, artistName: string) {
     await Promise.all([
         retry('itunes', async () => results.itunes = await itunes.search(p), 5),
         retry('kkbox', async () => results.kkbox = await kkbox.search(p), 5),
-        retry('netease', async () => results.netease = await netease.search(p), 5),
+        // retry('netease', async () => results.netease = await netease.search(p), 5),
         retry('qq', async () => results.qq = await qq.search(p), 5),
         retry('spotify', async () => results.spotify = await spotify.search(p), 5),
-        // retry('youtube', async () => results.youtube = await youtube.search(p), 5),
+        retry('youtube', async () => results.youtube = await youtube.search(p), 5),
     ]);
 
     return results;
