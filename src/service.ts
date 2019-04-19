@@ -4,6 +4,7 @@ import * as fs from 'fs';
 
 import { Gather } from '../lib/music-info-gatherer/src';
 
+import axios from 'axios';
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
@@ -236,16 +237,23 @@ export default class Service {
         }
     }
 
-    private initGather() {
+    private async initGather() {
+        // const proxy = await this.getProxy();
+        const proxy = undefined;
+
         return new Gather({
             proxies: {
-                netease: 'http://223.85.196.75:9797',
-            }
+                itunes: proxy,
+                netease: proxy,
+                qq: proxy,
+                kkbox: proxy,
+            },
         });
     }
 
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        const results = await this.initGather().search(songName, artistName);
+        const gather = await this.initGather();
+        const results = await gather.search(songName, artistName);
 
         // console.log(songName.toLowerCase(), artistName.toLowerCase())
 
@@ -297,6 +305,7 @@ export default class Service {
         await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
 
         const ws = fs.createWriteStream(filepath);
+        ws.write('\ufeff');
         ws.write(content);
         ws.end();
 
@@ -317,6 +326,18 @@ export default class Service {
         const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
 
         return fs.createReadStream(filepath!);
+    }
+
+    private async getProxy() {
+        try {
+            const response = await axios('http://183.129.244.16:88/open?user_name=VesselVatelap1&timestamp=1555659736&md5=26AE4B66A2D9CAA07E3F68FD06C6E32F&pattern=json&number=1');
+            console.log(response.data)
+            const proxy = `http://${response.data.domain}:${response.data.port[0]}`;
+
+            return proxy;
+        } catch (e) {
+            return undefined;
+        }
     }
 
 }

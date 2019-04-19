@@ -13,8 +13,8 @@ const Adapters = {
     kkbox: KkboxAdapter,
     netease: NeteaseMusicAdapter,
     qq: QQMusicAdapter,
-    spotify: SpotifyAdapter,
-    youtube: YoutubeAdapter,
+    // spotify: SpotifyAdapter,
+    // youtube: YoutubeAdapter,
 };
 
 export interface GatherOptions {
@@ -58,14 +58,10 @@ export class Gather {
     
         const results: any = {};
     
-        await Promise.all([
-            this.retry('itunes', async () => results.itunes = await this.adapters.itunes.search(p), 5),
-            this.retry('kkbox', async () => results.kkbox = await this.adapters.kkbox.search(p), 5),
-            this.retry('netease', async () => results.netease = await this.adapters.netease.search(p), 5),
-            this.retry('qq', async () => results.qq = await this.adapters.qq.search(p), 5),
-            this.retry('spotify', async () => results.spotify = await this.adapters.spotify.search(p), 5),
-            this.retry('youtube', async () => results.youtube = await this.adapters.youtube.search(p), 5),
-        ]);
+        await Promise.all(Object.keys(this.adapters).map(v => {
+            const tv: keyof typeof Adapters = v as keyof typeof Adapters;
+            return this.retry(tv, async () => results[tv] = await this.adapters[tv].search(p), 5);
+        }))
     
         return results;
     }

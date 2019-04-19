@@ -341,6 +341,11 @@ router.get('/download', async (ctx, next) => {
 
     const rs = await ctx.service.openFileStream(query.filename);
 
+    ctx.set({
+        'Content-Type': 'application/octet-stream;charset=utf8',
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}.csv`,
+    });
+
     ctx.body = rs;
 
     return await next();
