@@ -230,6 +230,19 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const companyIds = [ query.company_id ];
 
+    const cached = await ctx.service.cached(query.company_id);
+
+    if (cached) {
+        ctx.body = {
+            success: true,
+            message: '已下载',
+        };
+    
+        return await next();
+    }
+
+    await ctx.service.markDownloading(query.company_id);
+
     const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
     const tracks = embeded.reduce((tacc, company) => {
@@ -309,7 +322,7 @@ router.get('/get_tracks', async (ctx, next) => {
         const csv = list2csv(list, headerMap).replace(/"undefined"/g, '"未找到"');
 
         await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
-    })
+    });
 
     ctx.body = {
         success: true,

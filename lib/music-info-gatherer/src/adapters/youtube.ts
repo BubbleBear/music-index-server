@@ -62,7 +62,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new YoutubeAdapter();
-        const r = await a.search({ songName: 'Better Man Than He', artistName: 'Sivu' });
+        const r = await a.search({ songName: '好心分手', artistName: 'shawnyhc' });
         console.dir(r, {
             depth: 4,
         })

@@ -291,15 +291,17 @@ export default class Service {
     //     }
     // }
 
-    public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+    public async cached(redisKey: string) {
         const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
 
-        if (cached) {
-            return;
-        }
+        return Boolean(cached);
+    }
 
+    public async markDownloading(redisKey: string) {
         await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+    }
 
+    public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
         const ws = fs.createWriteStream(filepath);
         ws.write('\ufeff');
         ws.write(content);
