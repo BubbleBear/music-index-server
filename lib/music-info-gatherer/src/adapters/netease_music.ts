@@ -81,7 +81,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function () {
-        const a = new NeteaseMusicAdapter();
+        const a = new NeteaseMusicAdapter({ proxy: 'http://223.85.196.75:9797' });
         const r = await a.search({ songName: '一直这样吧', artistName: '王宇鹏' });
         console.dir(r, {
             depth: 4,

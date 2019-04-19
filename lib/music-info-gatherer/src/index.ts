@@ -6,50 +6,76 @@ import NeteaseMusicAdapter from './adapters/netease_music';
 import QQMusicAdapter from './adapters/qq_music';
 import SpotifyAdapter from './adapters/spotify';
 import YoutubeAdapter from './adapters/youtube';
+import { Adapter } from './adapters/abstract';
 
-const itunes = new ItunesAdapter;
-const kkbox = new KkboxAdapter;
-const netease = new NeteaseMusicAdapter;
-const qq = new QQMusicAdapter;
-const spotify = new SpotifyAdapter;
-const youtube = new YoutubeAdapter;
+const Adapters = {
+    itunes: ItunesAdapter,
+    kkbox: KkboxAdapter,
+    netease: NeteaseMusicAdapter,
+    qq: QQMusicAdapter,
+    spotify: SpotifyAdapter,
+    youtube: YoutubeAdapter,
+};
 
-async function retry(tag: string, fn: Function, times: number = 5) {
-    const errorBuffer = [];
-
-    while (times--) {
-        try {
-            return await fn();
-        } catch (e) {
-            errorBuffer.push(e);
-        }
-    }
-
-    console.log(tag, errorBuffer.map(e => e.message));
-    return [];
+export interface GatherOptions {
+    proxies: {
+        itunes?: string,
+        kkbox?: string,
+        netease?: string,
+        qq?: string,
+        spotify?: string,
+        youtube?: string,
+    };
 }
 
-export async function search(songName: string, artistName: string) {
-    const p = { songName, artistName };
+export class Gather {
+    private adapters: { [prop in keyof typeof Adapters]: Adapter } = {} as any;
 
-    const results: any = {};
+    constructor(options: GatherOptions) {
+        Object.keys(Adapters).forEach((v) => {
+            const tv: keyof typeof Adapters = v as keyof typeof Adapters;
+            this.adapters[tv] = new Adapters[tv]({ proxy: options.proxies[tv] });
+        });
+    }
 
-    await Promise.all([
-        retry('itunes', async () => results.itunes = await itunes.search(p), 5),
-        retry('kkbox', async () => results.kkbox = await kkbox.search(p), 5),
-        // retry('netease', async () => results.netease = await netease.search(p), 5),
-        retry('qq', async () => results.qq = await qq.search(p), 5),
-        retry('spotify', async () => results.spotify = await spotify.search(p), 5),
-        retry('youtube', async () => results.youtube = await youtube.search(p), 5),
-    ]);
+    public async retry(tag: string, fn: Function, times: number = 5) {
+        const errorBuffer = [];
+    
+        while (times--) {
+            try {
+                return await fn();
+            } catch (e) {
+                errorBuffer.push(e);
+            }
+        }
+    
+        console.log(tag, errorBuffer.map(e => e.message));
+        return [];
+    }
 
-    return results;
+    public async search(songName: string, artistName: string) {
+        const p = { songName, artistName };
+    
+        const results: any = {};
+    
+        await Promise.all([
+            this.retry('itunes', async () => results.itunes = await this.adapters.itunes.search(p), 5),
+            this.retry('kkbox', async () => results.kkbox = await this.adapters.kkbox.search(p), 5),
+            // this.retry('netease', async () => results.netease = await this.adapters.netease.search(p), 5),
+            this.retry('qq', async () => results.qq = await this.adapters.qq.search(p), 5),
+            this.retry('spotify', async () => results.spotify = await this.adapters.spotify.search(p), 5),
+            this.retry('youtube', async () => results.youtube = await this.adapters.youtube.search(p), 5),
+        ]);
+    
+        return results;
+    }
 }
 
 if (require.main === module) {
     !async function() {
-        const r = await search('好心分手', '卢巧音');
-        const ws = fs.createWriteStream('x.json');
+        const gather = new Gather({ proxies: {} });
+        const r = await gather.search('好心分手', '卢巧音');
+        const ws = fs.createWriteStream('x.json'); 
         ws.write(JSON.stringify(r));
         ws.end();
     }()

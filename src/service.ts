@@ -2,7 +2,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { search } from '../lib/music-info-gatherer/src';
+import { Gather } from '../lib/music-info-gatherer/src';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
@@ -12,6 +12,8 @@ import moment from 'moment';
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
+
+const REDIS_DOWNLOADING_FILE_SET_KEY = 'downloading.file';
 
 const REDIS_CACHED_FILE_MAP_KEY = 'cached.file';
 
@@ -234,8 +236,16 @@ export default class Service {
         }
     }
 
+    private initGather() {
+        return new Gather({
+            proxies: {
+                netease: 'http://223.85.196.75:9797',
+            }
+        });
+    }
+
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        const results = await search(songName, artistName);
+        const results = await this.initGather().search(songName, artistName);
 
         // console.log(songName.toLowerCase(), artistName.toLowerCase())
 
@@ -278,11 +288,25 @@ export default class Service {
     // }
 
     public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+        const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+
+        if (cached) {
+            return;
+        }
+
+        await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+
         const ws = fs.createWriteStream(filepath);
         ws.write(content);
         ws.end();
 
+        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+
         await this.redis.hset(REDIS_CACHED_FILE_MAP_KEY, redisKey, filepath);
+    }
+
+    public async listDownloadingFiles() {
+        return await this.redis.smembers(REDIS_DOWNLOADING_FILE_SET_KEY);
     }
 
     public async listCachedFiles() {

@@ -6,7 +6,6 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 import Router from 'koa-router';
 import moment from 'moment';
 import plimit from 'p-limit';
-import { stringify } from 'querystring';
 
 const router = new Router();
 
@@ -316,6 +315,15 @@ router.get('/list_files', async (ctx, next) => {
     ctx.body = {
         success: true,
         data: await ctx.service.listCachedFiles(),
+    };
+
+    return await next();
+});
+
+router.get('/list_downloading', async (ctx, next) => {
+    ctx.body = {
+        success: true,
+        data: await ctx.service.listDownloadingFiles(),
     };
 
     return await next();
