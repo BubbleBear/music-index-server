@@ -36,8 +36,6 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
         const response = await this.fetch({ url: '/weapi/cloudsearch/get/web?csrf_token=', data: postDataStr});
 
-        console.log(response.data)
-        
         const results = response.data.result.songs.map(async (v: any) => {
             return {
                 name: v.name,
@@ -56,8 +54,6 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
                 comments: await this.commentCount(v.id),
             };
         });
-
-        console.log('netease', response.status);
 
         return await Promise.all<SearchReturn>(results);
     }

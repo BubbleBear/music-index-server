@@ -7,6 +7,13 @@ import QQMusicAdapter from './adapters/qq_music';
 import SpotifyAdapter from './adapters/spotify';
 import YoutubeAdapter from './adapters/youtube';
 import { Adapter } from './adapters/abstract';
+import { info, warn, error } from './logger';
+
+import moment from 'moment';
+
+global.info = info;
+global.warn = warn;
+global.error = error;
 
 const Adapters = {
     itunes: ItunesAdapter,
@@ -17,7 +24,7 @@ const Adapters = {
     // youtube: YoutubeAdapter,
 };
 
-export interface GatherOptions {
+export interface GathererOptions {
     proxies: {
         itunes?: string,
         kkbox?: string,
@@ -28,10 +35,10 @@ export interface GatherOptions {
     };
 }
 
-export class Gather {
+export class Gatherer {
     private adapters: { [prop in keyof typeof Adapters]: Adapter } = {} as any;
 
-    constructor(options: GatherOptions) {
+    constructor(options: GathererOptions) {
         Object.keys(Adapters).forEach((v) => {
             const tv: keyof typeof Adapters = v as keyof typeof Adapters;
             this.adapters[tv] = new Adapters[tv]({ proxy: options.proxies[tv] });
@@ -39,17 +46,23 @@ export class Gather {
     }
 
     public async retry(tag: string, fn: Function, times: number = 5) {
-        const errorBuffer = [];
-    
         while (times--) {
             try {
                 return await fn();
             } catch (e) {
-                errorBuffer.push(e);
+                error({
+                    module: 'music-info-gatherer',
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    desc: 'album error',
+                    error: {
+                        message: e.message,
+                        stack: e.stack,
+                    },
+                    adapter: tag,
+                });
             }
         }
     
-        console.log(tag, errorBuffer.map(e => e.message));
         return [];
     }
 
@@ -69,7 +82,7 @@ export class Gather {
 
 if (require.main === module) {
     !async function() {
-        const gather = new Gather({ proxies: {} });
+        const gather = new Gatherer({ proxies: {} });
         const r = await gather.search('好心分手', '卢巧音');
         const ws = fs.createWriteStream('x.json'); 
         ws.write(JSON.stringify(r));

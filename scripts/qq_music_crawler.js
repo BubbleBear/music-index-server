@@ -74,6 +74,7 @@ async function bulkUpsertAlbum(albumList) {
         async onError(err, task) {
             console.log(task.errorCount, err.message, err.stack);
             logger.error({
+                module: 'scripts/qq_music_crawler',
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 desc: 'album error',
                 url: `https://c.y.qq.com/v8/fcg-bin/fcg_v8_album_info_cp.fcg?albummid=${task.albumMid}`,
@@ -161,6 +162,7 @@ async function getCompany(companyId) {
         async onError(err, task) {
             console.log(task.errorCount, err.message, err.stack);
             logger.error({
+                module: 'scripts/qq_music_crawler',
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 desc: 'page error',
                 page: task.page,
@@ -231,6 +233,7 @@ async function getCompanyAlbumList({ page, pageSize, companyId, sort }) {
     const url = `https://c.y.qq.com/v8/fcg-bin/fcg_company_detail.fcg?g_tk=201851078&hostUin=0&format=json&inCharset=utf8&outCharset=utf-8&type=album&companyId=${companyId}&pageNum=${page}&pageSize=${pageSize}&is_show=1&sort=${sort}`;
 
     logger.info({
+        module: 'scripts/qq_music_crawler',
         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         desc: 'request',
         url,
@@ -246,6 +249,7 @@ async function getCompanyAlbumList({ page, pageSize, companyId, sort }) {
         }));
     } else {
         logger.warn({
+            module: 'scripts/qq_music_crawler',
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'illegal response',
             url,
@@ -280,6 +284,7 @@ const scheduler = new Scheduler({
     async onError(err, task) {
         console.log(err.message, err.stack)
         logger.error({
+            module: 'scripts/qq_music_crawler',
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             desc: 'company error',
             companyId: task.companyId,

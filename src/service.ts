@@ -2,7 +2,7 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
-import { Gather } from '../lib/music-info-gatherer/src';
+import { Gatherer } from '../lib/music-info-gatherer/src';
 
 import axios from 'axios';
 import mongo, { MongoClient, Db } from "mongodb";
@@ -241,7 +241,7 @@ export default class Service {
         // const proxy = await this.getProxy();
         const proxy = undefined;
 
-        return new Gather({
+        return new Gatherer({
             proxies: {
                 itunes: proxy,
                 netease: proxy,
