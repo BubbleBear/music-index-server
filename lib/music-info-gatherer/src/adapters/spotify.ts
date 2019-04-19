@@ -60,7 +60,7 @@ export default class SpotifyAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new SpotifyAdapter();
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
+        const r = await a.search({ songName: 'Better Man Than He', artistName: 'Sivu' });
 
         console.dir(r, {
             depth: null,

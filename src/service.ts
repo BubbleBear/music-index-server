@@ -239,15 +239,10 @@ export default class Service {
     }
 
     private async initGather() {
-        // const proxy = await this.getProxy();
         const proxy = undefined;
 
         return new Gatherer({
             proxies: {
-                itunes: proxy,
-                netease: proxy,
-                qq: proxy,
-                kkbox: proxy,
             },
         });
     }
@@ -345,18 +340,6 @@ export default class Service {
         const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
 
         return fs.createReadStream(filepath!);
-    }
-
-    private async getProxy() {
-        try {
-            const response = await axios('http://183.129.244.16:88/open?user_name=VesselVatelap1&timestamp=1555659736&md5=26AE4B66A2D9CAA07E3F68FD06C6E32F&pattern=json&number=1');
-            console.log(response.data)
-            const proxy = `http://${response.data.domain}:${response.data.port[0]}`;
-
-            return proxy;
-        } catch (e) {
-            return undefined;
-        }
     }
 
 }

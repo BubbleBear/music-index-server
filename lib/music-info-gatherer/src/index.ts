@@ -21,8 +21,8 @@ const Adapters = {
     kkbox: KkboxAdapter,
     netease: NeteaseMusicAdapter,
     qq: QQMusicAdapter,
-    // spotify: SpotifyAdapter,
-    // youtube: YoutubeAdapter,
+    spotify: SpotifyAdapter,
+    youtube: YoutubeAdapter,
 };
 
 export interface GathererOptions {

@@ -336,6 +336,18 @@ router.get('/list_downloading', async (ctx, next) => {
     return await next();
 });
 
+router.get('/delete_cached_file', async (ctx, next) => {
+    const query = ctx.query;
+
+    await ctx.service.deleteCachedFile(query.filename);
+
+    ctx.body = {
+        success: true,
+    };
+
+    return await next();
+})
+
 router.get('/download', async (ctx, next) => {
     const query = ctx.query;
 

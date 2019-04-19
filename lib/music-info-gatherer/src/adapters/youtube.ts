@@ -42,7 +42,11 @@ export default class YoutubeAdapter extends AbstractAdapter {
             const views = viewsString ? viewsString.replace(/,/g, '') : null;
             let tmp = v.shortBylineText;
             const artists = tmp.simpleText ? tmp.simpleText
-                : tmp.runs.map((v: any) => v.text);
+                : tmp.runs.map((v: any) => {
+                    return {
+                        name: v.text,
+                    };
+                });
 
             return {
                 name: tify(v.title.simpleText),
@@ -58,7 +62,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new YoutubeAdapter();
-        const r = await a.search({ songName: 'Bonito Intro', artistName: 'Kero Kero Bonito' });
+        const r = await a.search({ songName: 'Better Man Than He', artistName: 'Sivu' });
         console.dir(r, {
             depth: 4,
         })
