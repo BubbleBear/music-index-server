@@ -282,10 +282,10 @@ router.get('/get_tracks', async (ctx, next) => {
             return;
         }
 
-        const headerMap = result.reduce((acc: any, cur: any) => {
-            acc[cur.name] = cur.name;
+        const orderedHeaderMap = result.reduce((acc: Map<string, any>, cur: any) => {
+            acc.set(cur.name, cur.name);
             return acc;
-        }, { ' ': ' ' });
+        }, new Map([[' ', ' ']]));
         
         const tunnels = Object.keys(result[0].data);
         
@@ -294,7 +294,7 @@ router.get('/get_tracks', async (ctx, next) => {
         
             return acc;
         }, {});
-        
+
         const map = result.reduce((acc, cur) => {
             const d = cur.data;
             Object.keys(d).forEach(k => {
@@ -319,7 +319,7 @@ router.get('/get_tracks', async (ctx, next) => {
             return acc;
         }, []);
         
-        const csv = list2csv(list, headerMap).replace(/"undefined"/g, '"未找到"');
+        const csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
 
         await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
     });

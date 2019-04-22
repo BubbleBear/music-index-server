@@ -15,7 +15,7 @@ export default class SpotifyAdapter extends AbstractAdapter {
             url,
             headers,
             httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
-            timeout: 10000,
+            timeout: 20000,
         });
     }
 
@@ -60,7 +60,7 @@ export default class SpotifyAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new SpotifyAdapter();
-        const r = await a.search({ songName: 'Better Man Than He', artistName: 'Sivu' });
+        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
 
         console.dir(r, {
             depth: null,

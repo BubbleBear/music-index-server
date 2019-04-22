@@ -251,19 +251,19 @@ export default class Service {
         const gather = await this.initGather();
         const results = await gather.search(songName, artistName);
 
-        console.log(songName, artistName)
+        // console.log(songName, artistName)
 
         const bestMatches = Object.keys(results).reduce((acc, cur) => {
-            console.log('--', cur)
+            // console.log('--', cur)
             acc[cur] = (results as any)[cur].filter((v: any) => {
-                    console.log('----', songName
-                        ,normalizeString(v.name).includes(normalizeString(songName))
-                        , v.artists.reduce((acc: boolean, cur: any) => {
-                            return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                        }, false))
+                    // console.log('----', songName
+                        // ,normalizeString(v.name).includes(normalizeString(songName))
+                        // , v.artists.reduce((acc: boolean, cur: any) => {
+                        //     return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                        // }, false))
 
                     return normalizeString(v.name).includes(normalizeString(songName)) && v.artists.reduce((acc: boolean, cur: any) => {
-                        console.log('------', cur.name, normalizeString(cur.name).includes(normalizeString(artistName)))
+                        // console.log('------', cur.name, normalizeString(cur.name).includes(normalizeString(artistName)))
                         return acc || normalizeString(cur.name).includes(normalizeString(artistName));
                     }, false);
                 })[0] || null;

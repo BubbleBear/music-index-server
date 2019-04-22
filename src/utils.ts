@@ -1,7 +1,15 @@
-export function list2csv(list: any[], headerMap?: any) {
-    const collumns = Object.keys(headerMap || list[0] || {});
+export function list2csv(list: any[], map?: object | Map<any, any>) {
+    let headerMap: Map<any, any> | undefined;
 
-    const header = collumns.map(v => `"${headerMap ? headerMap[v] : v}"`).join(',');
+    if (map && map instanceof Map === false) {
+        headerMap = new Map(Object.entries(map));
+    } else {
+        headerMap = map as Map<any, any>;
+    }
+
+    const collumns = headerMap && Array.from(headerMap.keys()) || Object.keys(list[0] || {});
+
+    const header = collumns.map(v => `"${headerMap ? headerMap.get(v) : v}"`).join(',');
 
     const content = list.reduce((acc, cur) => {
         acc += collumns.map(key => `"${cur[key]}"`).join(',');
@@ -33,4 +41,20 @@ export function normalizeString(target: string) {
     const result = target.toLowerCase().replace(/_/g, '-');
 
     return result;
+}
+
+if (require.main === module) {
+    const list = [
+        {
+            a: 1,
+            b: 2,
+            c: 3,
+        }
+    ];
+
+    const map = new Map([['c', 'c'], ['a', 'a'], ['b', 'b']])
+
+    const csv = list2csv(list, map)
+
+    console.log(csv)
 }
