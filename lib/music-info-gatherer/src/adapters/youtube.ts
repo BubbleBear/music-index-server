@@ -61,7 +61,9 @@ export default class YoutubeAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function() {
-        const a = new YoutubeAdapter();
+        const a = new YoutubeAdapter({
+            proxy: 'socks://127.0.0.1:1086',
+        });
         const r = await a.search({ songName: '好心分手', artistName: 'shawnyhc' });
         console.dir(r, {
             depth: 4,

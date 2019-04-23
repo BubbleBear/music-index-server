@@ -250,6 +250,7 @@ export default class Service {
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
         const gather = await this.initGather();
         const results = await gather.search(songName, artistName);
+        await this.redis.incr('count');
 
         // console.log(songName, artistName)
 

@@ -19,12 +19,12 @@ global.warn = warn;
 global.error = error;
 
 const Adapters = {
-    itunes: ItunesAdapter,
-    // kkbox: KkboxAdapter,
-    netease: NeteaseMusicAdapter,
-    qq: QQMusicAdapter,
-    // spotify: SpotifyAdapter,
-    // youtube: YoutubeAdapter,
+    // itunes: ItunesAdapter,
+    kkbox: KkboxAdapter,
+    // netease: NeteaseMusicAdapter,
+    // qq: QQMusicAdapter,
+    spotify: SpotifyAdapter,
+    youtube: YoutubeAdapter,
 };
 
 export interface GathererOptions {
@@ -39,9 +39,15 @@ export interface GathererOptions {
 }
 
 export class Gatherer {
-    private domestics = { 'itunes': true, 'kkbox': true, 'netease': true, 'qq': true };
+    private domestics: { [prop: string]: any } & { itunes: boolean, netease: boolean, qq: boolean }
+            = { itunes: true, netease: true, qq: true };
+
+    private foreign: { [prop: string]: any } & { kkbox: boolean, spotify: boolean, youtube: boolean }
+             = { kkbox: true, spotify: true, youtube: true };
 
     public domesticProxyPool: ProxyPool;
+
+    public foreignProxyPool: ProxyPool;
 
     constructor(options: GathererOptions) {
         this.domesticProxyPool = new ProxyPool({
@@ -67,7 +73,15 @@ export class Gatherer {
                 }
             },
             timeout: 3 * 60,
-        })
+        });
+
+        this.foreignProxyPool = new ProxyPool({
+            name: 'foreignProxyPool',
+            async get() {
+                return 'socks://127.0.0.1:1086';
+            },
+            timeout: 999999,
+        });
     }
 
     public async retry(tag: string, fn: Function, times: number = 5) {
@@ -102,7 +116,8 @@ export class Gatherer {
             return this.retry(
                 tk,
                 async () => results[tk] = await (new Adapters[tk]({
-                    proxy: this.domestics[tk] ? await this.domesticProxyPool.get() : undefined,
+                    proxy: this.domestics[tk] ? await this.domesticProxyPool.get() : 
+                        this.foreign[tk] ? await this.foreignProxyPool.get() : undefined,
                     // proxy: undefined,
                 })).search(p),
                 3
@@ -115,16 +130,13 @@ export class Gatherer {
 }
 
 if (require.main === module) {
-    let proxy = undefined;
-    proxy = 'http://' + '183.129.244.16' + ':' + '15971';
-
     !async function() {
         const gatherer = new Gatherer({
             proxies: {
-                itunes: proxy,
-                netease: proxy,
-                qq: proxy,
-                kkbox: proxy,
+                // itunes: proxy,
+                // netease: proxy,
+                // qq: proxy,
+                // kkbox: proxy,
             },
         });
 

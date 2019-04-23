@@ -13,7 +13,7 @@ export interface SearchReturn {
         name: string,
     }[];
     album: {
-        name: string,
+        name?: string,
     }
     views?: number;
 }
