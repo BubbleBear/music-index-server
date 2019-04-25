@@ -349,6 +349,18 @@ router.get('/list_downloading', async (ctx, next) => {
     return await next();
 });
 
+router.get('/cancel_downloading', async (ctx, next) => {
+    const query = ctx.query;
+
+    await ctx.service.unmarkDownloading(query.company_id)
+
+    ctx.body = {
+        success: true,
+    };
+
+    return await next();
+});
+
 router.get('/delete_cached_file', async (ctx, next) => {
     const query = ctx.query;
 

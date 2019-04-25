@@ -296,6 +296,10 @@ export default class Service {
         await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
     }
 
+    public async unmarkDownloading(redisKey: string) {
+        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+    }
+
     public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
         const ws = fs.createWriteStream(filepath);
         ws.write('\ufeff');
