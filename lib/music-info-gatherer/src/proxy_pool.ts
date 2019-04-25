@@ -4,8 +4,9 @@ const REDIS_PROXY_PREFIX = 'proxy#';
 
 export interface ProxyPoolOptions {
     name: string;
+    strategy: 'manual' | 'rotate';
+    timeout?: number;
     get(): Promise<string | undefined>;
-    timeout: number;
 }
 
 export default class ProxyPool {
@@ -13,7 +14,9 @@ export default class ProxyPool {
 
     private redis: Redis.Redis;
 
-    private timeout!: number;
+    private timeout?: number;
+
+    private strategy!: 'manual' | 'rotate';
 
     constructor(options: ProxyPoolOptions) {
         this.destructOptions(options);
@@ -25,18 +28,30 @@ export default class ProxyPool {
         });
     }
 
-    public async get(refresh: boolean = false) {
+    public async get(options?: any) {
+        return await this[this.strategy](options);
+    }
+
+    public async manual(refresh: boolean = false) {
         let buffered: string | null | undefined = await this.redis.get(`${REDIS_PROXY_PREFIX}${this.name}`);
 
         if (buffered === null || refresh === true) {
             buffered = await this._get();
 
-            await this.redis.setex(`${REDIS_PROXY_PREFIX}${this.name}`, this.timeout, buffered);
+            if (this.timeout) {
+                await this.redis.setex(`${REDIS_PROXY_PREFIX}${this.name}`, this.timeout, buffered);
+            } else {
+                await this.redis.set(`${REDIS_PROXY_PREFIX}${this.name}`, buffered);
+            }
         }
 
         console.log(buffered)
 
         return buffered;
+    }
+
+    public async rotate() {
+        return await this._get();
     }
 
     public async destroy() {
@@ -54,6 +69,7 @@ export default class ProxyPool {
             name: this.name,
             get: this._get,
             timeout: this.timeout,
+            strategy: this.strategy,
         } = options);
     }
 }

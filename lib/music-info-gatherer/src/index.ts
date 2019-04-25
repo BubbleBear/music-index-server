@@ -13,16 +13,17 @@ import ProxyPool from './proxy_pool';
 
 import moment from 'moment';
 import axios from 'axios';
+import Redis from 'ioredis';
 
 global.info = info;
 global.warn = warn;
 global.error = error;
 
 const Adapters = {
-    // itunes: ItunesAdapter,
+    itunes: ItunesAdapter,
     kkbox: KkboxAdapter,
-    // netease: NeteaseMusicAdapter,
-    // qq: QQMusicAdapter,
+    netease: NeteaseMusicAdapter,
+    qq: QQMusicAdapter,
     spotify: SpotifyAdapter,
     youtube: YoutubeAdapter,
 };
@@ -49,9 +50,19 @@ export class Gatherer {
 
     public foreignProxyPool: ProxyPool;
 
+    private redis: Redis.Redis;
+
     constructor(options: GathererOptions) {
+        this.redis = new Redis({
+            host: 'localhost',
+            port: 6379,
+            dropBufferSupport: true,
+        });
+
         this.domesticProxyPool = new ProxyPool({
             name: 'domesticProxyPool',
+            timeout: 3 * 60,
+            strategy: 'manual',
             async get() {
                 try {
                     const response = await axios('http://183.129.244.16:88/open?user_name=VesselVatelap2&timestamp=1555670956&md5=B8FF018E0E42DDC6F2D67915A9CB943C&pattern=json&number=1');
@@ -72,15 +83,47 @@ export class Gatherer {
                     return undefined;
                 }
             },
-            timeout: 3 * 60,
         });
+
+        const gather = this;
 
         this.foreignProxyPool = new ProxyPool({
             name: 'foreignProxyPool',
+            strategy: 'rotate',
             async get() {
-                return 'socks://127.0.0.1:1086';
+                const interval = 2000;
+                const availableKey = 'proxy#foreignProxyPool#unavailable';
+
+                const proxies = [
+                    'socks://127.0.0.1:7778',
+                    'socks://127.0.0.1:7779',
+                    'socks://127.0.0.1:7780',
+                    'socks://127.0.0.1:7781',
+                ];
+
+                const size = proxies.length;
+
+                let next = Number(await gather.redis.get('proxy#foreignProxyPool#next')) % size;
+                await gather.redis.setex('proxy#foreignProxyPool#next', 300, (next + 1) % size);
+
+                let available = await gather.redis.get(`${availableKey}#${next}`);
+
+                while (available !== null) {
+                    next = (next + 1) % size;
+                    available = await gather.redis.get(`${availableKey}#${next}`);
+
+                    await new Promise((resolve, reject) => {
+                        setTimeout(() => {
+                            resolve();
+                        }, interval);
+                    });
+                }
+
+                await gather.redis.set(`${availableKey}#${next}`, '');
+                await gather.redis.pexpire(`${availableKey}#${next}`, interval);
+                
+                return proxies[next];
             },
-            timeout: 999999,
         });
     }
 
@@ -99,7 +142,7 @@ export class Gatherer {
                     },
                 });
 
-                this.domesticProxyPool.get(true);
+                this.domestics[tag] && this.domesticProxyPool.get(true);
             }
         }
     
@@ -110,6 +153,10 @@ export class Gatherer {
         const p = { songName, artistName };
     
         const results: any = {};
+
+        const foreignProxy = await this.foreignProxyPool.get();
+
+        console.log(foreignProxy)
     
         await Promise.all(Object.keys(Adapters).map(k => {
             const tk: keyof typeof Adapters = k as keyof typeof Adapters;
@@ -117,7 +164,7 @@ export class Gatherer {
                 tk,
                 async () => results[tk] = await (new Adapters[tk]({
                     proxy: this.domestics[tk] ? await this.domesticProxyPool.get() : 
-                        this.foreign[tk] ? await this.foreignProxyPool.get() : undefined,
+                        this.foreign[tk] ? foreignProxy : undefined,
                     // proxy: undefined,
                 })).search(p),
                 3
@@ -146,5 +193,6 @@ if (require.main === module) {
         ws.end();
 
         await gatherer.domesticProxyPool.destroy();
+        await gatherer.foreignProxyPool.destroy();
     }()
 }

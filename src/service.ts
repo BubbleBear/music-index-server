@@ -32,6 +32,8 @@ export default class Service {
 
     // private _browser: Promise<puppeteer.Browser>;
 
+    private gatherer: Gatherer;
+
     constructor() {
         this._client = mongo.connect('mongodb://localhost:27017', {
             useNewUrlParser: true,
@@ -48,6 +50,8 @@ export default class Service {
             port: 6379,
             dropBufferSupport: true,
         });
+
+        this.gatherer = new Gatherer({ proxies: {}});
     }
 
     async sync() {
@@ -238,18 +242,8 @@ export default class Service {
         }
     }
 
-    private async initGather() {
-        const proxy = undefined;
-
-        return new Gatherer({
-            proxies: {
-            },
-        });
-    }
-
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
-        const gather = await this.initGather();
-        const results = await gather.search(songName, artistName);
+        const results = await this.gatherer.search(songName, artistName);
         await this.redis.incr('count');
 
         // console.log(songName, artistName)
