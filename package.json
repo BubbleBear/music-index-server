@@ -21,6 +21,8 @@
   "homepage": "https://github.com/BubbleBear/music-index-server#readme",
   "dependencies": {
     "@koa/cors": "^3.0.0",
+    "@types/async-lock": "^1.1.1",
+    "async-lock": "^1.2.0",
     "axios": "^0.18.0",
     "chinese-conv": "^1.0.1",
     "crypto-js": "^3.1.9-1",

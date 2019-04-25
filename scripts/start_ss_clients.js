@@ -1,7 +1,7 @@
 const cp = require('child_process');
 const util = require('util');
 
-const config = require('../config/shadowsocks.json');
+const config = require('../config/testss.json');
 
 const clientProsessPool = [];
 
@@ -11,7 +11,7 @@ async function start(startPort = 7777) {
     // console.log(serverList)
 
     // todo: increase port on start-up failure
-    const commands = serverList.map(v => {
+    const commands = serverList.filter(v => v.enable).map(v => {
         return `ss-local -p ${v.server_port} -k ${v.password} -m ${v.method} -s ${v.server} -l ${startPort++}`;
     });
 

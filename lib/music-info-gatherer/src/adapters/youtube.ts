@@ -17,7 +17,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
             baseURL: 'https://www.youtube.com',
             headers: {
                 'x-youtube-client-name': '1',
-                'x-youtube-client-version': '2.20190319',
+                'x-youtube-client-version': '2.20190423',
                 connection: 'keep-alive',
             },
             httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
@@ -62,9 +62,9 @@ export default class YoutubeAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new YoutubeAdapter({
-            proxy: 'socks://127.0.0.1:7780',
+            proxy: 'socks://127.0.0.1:7778',
         });
-        const r = await a.search({ songName: '恨上瘾', artistName: '赵学而' });
+        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
         console.dir(r, {
             depth: 4,
         })

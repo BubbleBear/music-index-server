@@ -18,7 +18,47 @@
             "password": "R3kG74rEYaKdPMK",
             "method": "chacha20-ietf-poly1305",
             "remarks": "",
-            "server": "hk1-sta76.u0217.pw",
+            "server": "au1-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "hk3-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "hk5-sta76.u0217.pw",
             "kcptun": {
                 "nocomp": false,
                 "key": "it's a secrect",
@@ -39,6 +79,86 @@
             "method": "chacha20-ietf-poly1305",
             "remarks": "",
             "server": "jp1-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "jp2-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "jp3-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "nl1-sta76.u0217.pw",
+            "kcptun": {
+                "nocomp": false,
+                "key": "it's a secrect",
+                "crypt": "aes",
+                "datashard": 10,
+                "mtu": 1350,
+                "mode": "fast",
+                "parityshard": 3,
+                "arguments": ""
+            },
+            "enabled_kcptun": false,
+            "server_port": 46104,
+            "remarks_base64": ""
+        },
+        {
+            "enable": true,
+            "password": "R3kG74rEYaKdPMK",
+            "method": "chacha20-ietf-poly1305",
+            "remarks": "",
+            "server": "uk1-sta76.u0217.pw",
             "kcptun": {
                 "nocomp": false,
                 "key": "it's a secrect",
@@ -98,27 +218,7 @@
             "password": "R3kG74rEYaKdPMK",
             "method": "chacha20-ietf-poly1305",
             "remarks": "",
-            "server": "hk3-sta76.u0217.pw",
-            "kcptun": {
-                "nocomp": false,
-                "key": "it's a secrect",
-                "crypt": "aes",
-                "datashard": 10,
-                "mtu": 1350,
-                "mode": "fast",
-                "parityshard": 3,
-                "arguments": ""
-            },
-            "enabled_kcptun": false,
-            "server_port": 46104,
-            "remarks_base64": ""
-        },
-        {
-            "enable": true,
-            "password": "R3kG74rEYaKdPMK",
-            "method": "chacha20-ietf-poly1305",
-            "remarks": "",
-            "server": "ru1-sta76.u0217.pw",
+            "server": "us3-sta76.u0217.pw",
             "kcptun": {
                 "nocomp": false,
                 "key": "it's a secrect",

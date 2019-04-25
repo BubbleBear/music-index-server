@@ -45,8 +45,6 @@ export default class ProxyPool {
             }
         }
 
-        console.log(buffered)
-
         return buffered;
     }
 
