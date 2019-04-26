@@ -54,8 +54,12 @@ export default class KkboxAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function() {
-        const a = new KkboxAdapter({ proxy: `http://183.129.244.16:11344` });
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
-        console.log(r)
+        const a = new KkboxAdapter({
+            proxy: 'socks://127.0.0.1:7778',
+        });
+        const r = await a.search({ songName: '假装', artistName: '蔡依林' });
+        console.dir(r, {
+            depth: null,
+        });
     }()
 }

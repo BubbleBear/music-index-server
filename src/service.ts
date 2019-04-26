@@ -133,7 +133,9 @@ export default class Service {
     async createCompanyStatistics(assignedDate?: number | string) {
         await this.sync();
 
-        await this.db.createCollection('company_statistics');
+        try {
+            await this.db.createCollection('company_statistics');
+        } catch (e) {}
 
         const collection = this.db.collection('company_statistics');
 
@@ -243,6 +245,23 @@ export default class Service {
     }
 
     public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
+        await this.sync();
+
+        try {
+            await this.db.createCollection('track');
+        } catch (e) {}
+
+        const collection = this.db.collection('track');
+
+        (await collection.indexExists('channel')) || (await this.db.createIndex('track', 'channel'));
+        (await collection.indexExists('artists.name')) || (await this.db.createIndex('track', 'artists.name'));
+        (await collection.indexExists([ 'name', 'artists.name' ])) || (await this.db.createIndex('track', [ 'name', 'artists.name' ]));
+
+        const cached = await collection.find({
+            name: songName,
+            'artists.name': artistName,
+        }).toArray();
+
         const results = await this.gatherer.search(songName, artistName);
         await this.redis.incr('count');
 
@@ -265,6 +284,25 @@ export default class Service {
 
             return acc;
         }, {} as any);
+
+        await Promise.all(Object.keys(bestMatches).map(async (k: string) => {
+            bestMatches[k] && await collection.findOneAndUpdate(
+                {
+                    name: songName,
+                    'artists.name': artistName,
+                    channel: k,
+                },
+                {
+                    $set: Object.assign({
+                        channel: k,
+                        createdAt: Date.now(),
+                    }, bestMatches[k]),
+                },
+                {
+                    upsert: true,
+                }
+            );
+        }));
 
         console.log(songName, '#########', artistName);
 

@@ -1,8 +1,15 @@
 "use strict";
 exports.__esModule = true;
-function list2csv(list, headerMap) {
-    var collumns = Object.keys(headerMap || list[0] || {});
-    var header = collumns.map(function (v) { return "\"" + (headerMap ? headerMap[v] : v) + "\""; }).join(',');
+function list2csv(list, map) {
+    var headerMap;
+    if (map && map instanceof Map === false) {
+        headerMap = new Map(Object.entries(map));
+    }
+    else {
+        headerMap = map;
+    }
+    var collumns = headerMap && Array.from(headerMap.keys()) || Object.keys(list[0] || {});
+    var header = collumns.map(function (v) { return "\"" + (headerMap ? headerMap.get(v) : v) + "\""; }).join(',');
     var content = list.reduce(function (acc, cur) {
         acc += collumns.map(function (key) { return "\"" + cur[key] + "\""; }).join(',');
         acc += '\r\n';
@@ -26,3 +33,20 @@ function filterUndefinedAndEmpty(obj) {
     return obj;
 }
 exports.filterUndefinedAndEmpty = filterUndefinedAndEmpty;
+function normalizeString(target) {
+    var result = target.toLowerCase().replace(/_/g, '-');
+    return result;
+}
+exports.normalizeString = normalizeString;
+if (require.main === module) {
+    var list = [
+        {
+            a: 1,
+            b: 2,
+            c: 3
+        }
+    ];
+    var map = new Map([['c', 'c'], ['a', 'a'], ['b', 'b']]);
+    var csv = list2csv(list, map);
+    console.log(csv);
+}

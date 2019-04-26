@@ -23,10 +23,10 @@ global.error = error;
 const lock = new AsyncLock();
 
 const Adapters = {
-    // itunes: ItunesAdapter,
+    itunes: ItunesAdapter,
     kkbox: KkboxAdapter,
-    // netease: NeteaseMusicAdapter,
-    // qq: QQMusicAdapter,
+    netease: NeteaseMusicAdapter,
+    qq: QQMusicAdapter,
     spotify: SpotifyAdapter,
     youtube: YoutubeAdapter,
 };
@@ -67,9 +67,18 @@ export class Gatherer {
             timeout: 3 * 60,
             strategy: 'manual',
             async get() {
+                return undefined
                 try {
-                    const response = await axios('http://183.129.244.16:88/open?user_name=VesselVatelap2&timestamp=1555670956&md5=B8FF018E0E42DDC6F2D67915A9CB943C&pattern=json&number=1');
+                    const response = await axios('http://183.129.244.16:88/open?user_name=flylion816ap1&timestamp=1556259192&md5=F29CBD586686CE4DB2E6213EA2B79359&pattern=json&number=1');
                     const proxy = `http://${response.data.domain}:${response.data.port}`;
+
+                    global.info({
+                        module: 'music-info-gatherer',
+                        desc: 'got domestic proxy',
+                        proxy,
+                        url: 'http://183.129.244.16:88/open?user_name=flylion816ap1&timestamp=1556259192&md5=F29CBD586686CE4DB2E6213EA2B79359&pattern=json&number=1',
+                        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    });
         
                     return proxy;
                 } catch (e) {
@@ -94,7 +103,7 @@ export class Gatherer {
             name: 'foreignProxyPool',
             strategy: 'rotate',
             async get() {
-                const interval = 10000;
+                const interval = 5000;
                 const availableKey = 'proxy#foreignProxyPool#unavailable';
 
                 const proxies = [
@@ -102,9 +111,13 @@ export class Gatherer {
                     'socks://127.0.0.1:7778',
                     'socks://127.0.0.1:7779',
                     'socks://127.0.0.1:7780',
-                    // 'socks://127.0.0.1:7781',
-                    // 'socks://127.0.0.1:7782',
-                    // 'socks://127.0.0.1:7783',
+                    'socks://127.0.0.1:7781',
+                    'socks://127.0.0.1:7782',
+                    'socks://127.0.0.1:7783',
+                    'socks://127.0.0.1:7784',
+                    'socks://127.0.0.1:7785',
+                    'socks://127.0.0.1:7786',
+                    'socks://127.0.0.1:7787',
                 ];
 
                 const size = proxies.length;

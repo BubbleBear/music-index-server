@@ -1,7 +1,7 @@
 const cp = require('child_process');
 const util = require('util');
 
-const config = require('../config/testss.json');
+const config = require('../config/export.json');
 
 const clientProsessPool = [];
 

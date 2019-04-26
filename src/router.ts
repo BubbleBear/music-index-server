@@ -282,43 +282,43 @@ router.get('/get_tracks', async (ctx, next) => {
             return;
         }
 
-        const orderedHeaderMap = result.reduce((acc: Map<string, any>, cur: any) => {
-            acc.set(cur.name, cur.name);
+        const tunnels = Object.keys(result[0].data);
+
+        const orderedHeaderMap = tunnels.reduce((acc, cur) => {
+            acc.set(cur, cur);
             return acc;
         }, new Map([[' ', ' ']]));
-        
-        const tunnels = Object.keys(result[0].data);
-        
-        const template = tunnels.reduce((acc: any, cur: any) => {
-            acc[cur] = {};
-        
-            return acc;
-        }, {});
 
         const map = result.reduce((acc, cur) => {
             const d = cur.data;
             Object.keys(d).forEach(k => {
-                switch (k) {
-                    case 'itunes': d[k] && (acc[k][d[k].name] = '存在'); break;
-                    case 'qq': d[k] && (acc[k][d[k].name] = d[k].comments); break;
-                    case 'netease': d[k] && (acc[k][d[k].name] = d[k].comments); break;
-                    case 'kkbox': d[k] && (acc[k][d[k].name] = '存在'); break;
-                    case 'spotify': d[k] && (acc[k][d[k].name] = '存在'); break;
-                    case 'youtube': d[k] && (acc[k][d[k].name] = d[k].views); break;
+                if (d[k] && d[k].name) {
+                    if (acc[d[k].name] == undefined) {
+                        acc[d[k].name] = {};
+                    }
+
+                    switch (k) {
+                        case 'itunes': acc[d[k].name][k] = '存在'; break;
+                        case 'qq': acc[d[k].name][k] = d[k].comments; break;
+                        case 'netease': acc[d[k].name][k] = d[k].comments; break;
+                        case 'kkbox': acc[d[k].name][k] = '存在'; break;
+                        case 'spotify': acc[d[k].name][k] = '存在'; break;
+                        case 'youtube': acc[d[k].name][k] = d[k].views; break;
+                    }
                 }
             });
-        
+
             return acc;
-        }, template);
-        
-        const list = Object.keys(map).reduce((acc: any, cur: any) => {
+        }, {});
+
+        const list = Object.keys(map).reduce((acc, cur) => {
             const entry = map[cur];
             entry[' '] = cur;
             acc.push(entry);
-        
+
             return acc;
-        }, []);
-        
+        }, [] as any[]);
+
         const csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
 
         await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
