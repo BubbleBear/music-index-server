@@ -12,6 +12,9 @@ import moment from 'moment';
 import { SearchReturn } from '../lib/music-info-gatherer/src/adapters/abstract';
 // import puppeteer from 'puppeteer';
 
+// this is also referred in crawler script
+const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
+
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
 
 const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
@@ -212,7 +215,7 @@ export default class Service {
         return dates;
     }
 
-    crawl(parallelSize: number = 5, companyQuant: number = 10) {
+    async crawl(parallelSize: number = 5, companyQuant: number = 10) {
         const crawler = cp.spawn(
             'node',
             [ `${path.join(__dirname, '../scripts/qq_music_crawler.js')}`, parallelSize.toString(), companyQuant.toString() ],
@@ -232,14 +235,14 @@ export default class Service {
             }
         });
 
-        return crawler;
+        return;
     }
 
-    kill(process: cp.ChildProcess) {
+    async cancelCrawling() {
         try {
-            const result = process.kill('SIGKILL');
+            await this.redis.del(REDIS_QQ_CRALWER_STATUS);
 
-            return result;
+            return true;
         } catch (e) {
             return false;
         }

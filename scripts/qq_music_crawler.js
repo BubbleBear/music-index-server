@@ -15,6 +15,8 @@ const redis = new Redis({
 
 axios.default.timeout = 5000;
 
+const REDIS_QMC_STATUS = 'qq.music.crawler.status';
+
 const REDIS_QMC_COMPANY_KEY = 'qq.music.crawler.company';
 
 const MONGO_COMPANY_COLLECTION = 'company';
@@ -44,6 +46,10 @@ async function getDB() {
     }
 
     return db;
+}
+
+async function cleanseCache() {
+    return await redis.del(REDIS_QMC_COMPANY_KEY);
 }
 
 async function getAlbumInfo(albumMid) {
@@ -135,6 +141,12 @@ async function getCompanyInGeneral(companyId) {
 }
 
 async function getCompany(companyId) {
+    const crawlerStatus = await redis.get(REDIS_QMC_STATUS);
+
+    if (crawlerStatus !== 'running') {
+        return;
+    }
+
     await getCompanyInGeneral(companyId);
 
     const albumLists = [];
@@ -302,6 +314,15 @@ const scheduler = new Scheduler({
 });
 
 async function run() {
+    const crawlerStatus = await redis.get(REDIS_QMC_STATUS);
+
+    if (crawlerStatus === 'running') {
+        console.log('already running, do not start more than one instance');
+        redis.disconnect();
+
+        return;
+    }
+
     await getDB();
 
     const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
@@ -317,7 +338,13 @@ async function run() {
         }
     }
 
+    await redis.set(REDIS_QMC_STATUS, 'running');
+
     await scheduler.dispatch();
+
+    await redis.del(REDIS_QMC_STATUS);
+
+    await cleanseCache();
 
     client.close()
     redis.disconnect();

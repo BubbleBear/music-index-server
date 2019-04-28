@@ -157,11 +157,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 router.post('/crawl', async (ctx, next) => {
     const query = ctx.query;
 
-    const app: any = ctx.app;
-
-    // const crawler = ctx.service.crawl(query.parallel_size, query.company_quant);
-
-    // app.childProcessMap.crawler = crawler;
+    await ctx.service.crawl(query.parallel_size, query.company_quant);
 
     ctx.body = {
         success: true,
@@ -170,13 +166,11 @@ router.post('/crawl', async (ctx, next) => {
     return await next();
 });
 
-router.post('/terminate_crawling', async (ctx, next) => {
+router.post('/cancel_crawling', async (ctx, next) => {
     const app: any = ctx.app;
 
-    const crawler = app.childProcessMap.crawler;
-
     ctx.body = {
-        success: ctx.service.kill(crawler),
+        success: await ctx.service.cancelCrawling(),
     };
 
     return await next();
