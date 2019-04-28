@@ -53,7 +53,7 @@ export class Gatherer {
 
     public foreignProxyPool: ProxyPool;
 
-    private redis: Redis.Redis;
+    public redis: Redis.Redis;
 
     constructor(options: GathererOptions) {
         this.redis = new Redis({
@@ -67,16 +67,17 @@ export class Gatherer {
             timeout: 3 * 60,
             strategy: 'manual',
             async get() {
-                return undefined
                 try {
-                    const response = await axios('http://183.129.244.16:88/open?user_name=flylion816ap1&timestamp=1556259192&md5=F29CBD586686CE4DB2E6213EA2B79359&pattern=json&number=1');
+                    // const url = 'http://183.129.244.16:88/open?user_name=acknoledgeap1&timestamp=1556419502&md5=E917014A583C3E575C65903449ABDC51&pattern=json&number=1';
+                    const url = 'http://183.129.244.16:88/open?user_name=blindingdustap1&timestamp=1556432450&md5=8E0C3584FBB401A4A7B4297EBC6F3735&pattern=json&number=1';
+                    const response = await axios(url);
                     const proxy = `http://${response.data.domain}:${response.data.port}`;
 
                     global.info({
                         module: 'music-info-gatherer',
                         desc: 'got domestic proxy',
                         proxy,
-                        url: 'http://183.129.244.16:88/open?user_name=flylion816ap1&timestamp=1556259192&md5=F29CBD586686CE4DB2E6213EA2B79359&pattern=json&number=1',
+                        url,
                         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                     });
         
@@ -145,12 +146,27 @@ export class Gatherer {
 
                         cb();
                     }, (err, ret) => {
+                        err && global.error({
+                            module: 'music-info-gatherer',
+                            desc: 'getting proxy error',
+                            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                            error: {
+                                message: err.message,
+                                stack: err.stack,
+                            },
+                        });
+
                         resolve(ret);
                     });
                 });
 
-                console.log(proxies[next], moment().format('YYYY-MM-DD HH:mm:ss SSS'))
-                
+                global.info({
+                    module: 'music-info-gatherer',
+                    desc: 'got domestic proxy',
+                    proxy: proxies[next],
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                });
+
                 return proxies[next];
             },
         });
@@ -220,11 +236,12 @@ if (require.main === module) {
             },
         });
 
-        const r = await gatherer.search('大碗宽面', '吴亦凡');
+        const r = await gatherer.search('东西', '林俊呈');
         const ws = fs.createWriteStream(path.join(__dirname, '../../../x.json')); 
         ws.write(JSON.stringify(r));
         ws.end();
 
+        await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();
         await gatherer.foreignProxyPool.destroy();
     }()

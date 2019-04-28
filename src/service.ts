@@ -258,50 +258,60 @@ export default class Service {
         (await collection.indexExists([ 'name', 'artists.name' ])) || (await this.db.createIndex('track', [ 'name', 'artists.name' ]));
 
         const cached = await collection.find({
-            name: songName,
+            alias: songName,
             'artists.name': artistName,
         }).toArray();
 
         const results = await this.gatherer.search(songName, artistName);
         await this.redis.incr('count');
 
-        // console.log(songName, artistName)
-
         const bestMatches = Object.keys(results).reduce((acc, cur) => {
-            // console.log('--', cur)
             acc[cur] = (results as any)[cur].filter((v: any) => {
-                    // console.log('----', songName
-                        // ,normalizeString(v.name).includes(normalizeString(songName))
-                        // , v.artists.reduce((acc: boolean, cur: any) => {
-                        //     return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                        // }, false))
 
-                    return normalizeString(v.name).includes(normalizeString(songName)) && v.artists.reduce((acc: boolean, cur: any) => {
-                        // console.log('------', cur.name, normalizeString(cur.name).includes(normalizeString(artistName)))
-                        return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                    }, false);
+                    return normalizeString(v.name).includes(normalizeString(songName))
+                        && (normalizeString(v.name).includes(normalizeString(artistName))
+                        || v.artists.reduce((acc: boolean, cur: any) => {
+                            
+                            return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                        }, false));
                 })[0] || null;
 
             return acc;
         }, {} as any);
 
         await Promise.all(Object.keys(bestMatches).map(async (k: string) => {
-            bestMatches[k] && await collection.findOneAndUpdate(
-                {
-                    name: songName,
-                    'artists.name': artistName,
-                    channel: k,
-                },
-                {
-                    $set: Object.assign({
+            if (bestMatches[k]) {
+                const upsert = await collection.updateOne(
+                    {
+                        alias: songName,
+                        'artists.name': artistName,
                         channel: k,
-                        createdAt: Date.now(),
-                    }, bestMatches[k]),
-                },
-                {
-                    upsert: true,
-                }
-            );
+                    },
+                    {
+                        $set: Object.assign({
+                            channel: k,
+                            createdAt: Date.now(),
+                        }, bestMatches[k]),
+                        $setOnInsert: {
+                            alias: [],
+                        },
+                    },
+                    {
+                        upsert: true,
+                    }
+                );
+
+                await collection.updateOne(
+                    {
+                        _id: upsert.upsertedId._id,
+                    },
+                    {
+                        $addToSet: {
+                            alias: songName,
+                        },
+                    }
+                );
+            }
         }));
 
         console.log(songName, '#########', artistName);

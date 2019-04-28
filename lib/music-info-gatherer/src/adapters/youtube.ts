@@ -2,7 +2,7 @@ import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
-import { tify } from 'chinese-conv';
+import { sify } from 'chinese-conv';
 
 export default class YoutubeAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {
@@ -37,8 +37,8 @@ export default class YoutubeAdapter extends AbstractAdapter {
 
         return result.filter((v: any) => v.videoRenderer).map((v: any) => {
             v = v.videoRenderer;
-            const viewsText = v.viewCountText.simpleText.match(/([\d,]*)/);
-            const viewsString = viewsText ? viewsText[1] : null;
+            const viewsMatches = v.viewCountText.simpleText.match(/\D*([\d,]*)\D*/);
+            const viewsString = viewsMatches ? viewsMatches[1] : null;
             const views = viewsString ? viewsString.replace(/,/g, '') : null;
             let tmp = v.shortBylineText;
             const artists = tmp.simpleText ? tmp.simpleText
@@ -49,7 +49,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
                 });
 
             return {
-                name: tify(v.title.simpleText),
+                name: sify(v.title.simpleText),
                 artists,
                 album: {},
                 views,
@@ -64,7 +64,7 @@ if (require.main === module) {
         const a = new YoutubeAdapter({
             proxy: 'socks://127.0.0.1:7778',
         });
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
+        const r = await a.search({ songName: '爱若', artistName: '陈粒' });
         console.dir(r, {
             depth: 4,
         })

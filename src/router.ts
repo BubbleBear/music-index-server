@@ -292,18 +292,18 @@ router.get('/get_tracks', async (ctx, next) => {
         const map = result.reduce((acc, cur) => {
             const d = cur.data;
             Object.keys(d).forEach(k => {
-                if (d[k] && d[k].name) {
-                    if (acc[d[k].name] == undefined) {
-                        acc[d[k].name] = {};
+                if (d[k]) {
+                    if (acc[cur.name] == undefined) {
+                        acc[cur.name] = {};
                     }
 
                     switch (k) {
-                        case 'itunes': acc[d[k].name][k] = '存在'; break;
-                        case 'qq': acc[d[k].name][k] = d[k].comments; break;
-                        case 'netease': acc[d[k].name][k] = d[k].comments; break;
-                        case 'kkbox': acc[d[k].name][k] = '存在'; break;
-                        case 'spotify': acc[d[k].name][k] = '存在'; break;
-                        case 'youtube': acc[d[k].name][k] = d[k].views; break;
+                        case 'itunes': acc[cur.name][k] = '存在'; break;
+                        case 'qq': acc[cur.name][k] = d[k].comments; break;
+                        case 'netease': acc[cur.name][k] = d[k].comments; break;
+                        case 'kkbox': acc[cur.name][k] = '存在'; break;
+                        case 'spotify': acc[cur.name][k] = '存在'; break;
+                        case 'youtube': acc[cur.name][k] = d[k].views; break;
                     }
                 }
             });
