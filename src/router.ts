@@ -6,6 +6,8 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 import Router from 'koa-router';
 import moment from 'moment';
 import plimit from 'p-limit';
+import { SearchReturn } from '../lib/music-info-gatherer/src/adapters/abstract';
+import { adapters } from '../lib/music-info-gatherer/src';
 
 const router = new Router();
 
@@ -262,7 +264,10 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    Promise.all<any>(
+    Promise.all<{
+        name: string,
+        data: { [prop in keyof adapters]: SearchReturn | null },
+    }>(
         tracks.map(
             (track: any) => {
                 return limit(async () => {
@@ -291,25 +296,27 @@ router.get('/get_tracks', async (ctx, next) => {
 
         const map = result.reduce((acc, cur) => {
             const d = cur.data;
-            Object.keys(d).forEach(k => {
-                if (d[k]) {
-                    if (acc[cur.name] == undefined) {
-                        acc[cur.name] = {};
-                    }
+            (Object.keys(d) as Array<keyof typeof d>).forEach(k => {
+                if (acc[cur.name] == undefined) {
+                    acc[cur.name] = {};
+                }
 
+                if (d[k]) {
                     switch (k) {
                         case 'itunes': acc[cur.name][k] = '存在'; break;
-                        case 'qq': acc[cur.name][k] = d[k].comments; break;
-                        case 'netease': acc[cur.name][k] = d[k].comments; break;
+                        case 'qq': acc[cur.name][k] = d[k]!.comments; break;
+                        case 'netease': acc[cur.name][k] = d[k]!.comments; break;
                         case 'kkbox': acc[cur.name][k] = '存在'; break;
                         case 'spotify': acc[cur.name][k] = '存在'; break;
-                        case 'youtube': acc[cur.name][k] = d[k].views; break;
+                        case 'youtube': acc[cur.name][k] = d[k]!.views; break;
                     }
+                } else {
+                    acc[cur.name][k] = '查询失败';
                 }
             });
 
             return acc;
-        }, {});
+        }, {} as any);
 
         const list = Object.keys(map).reduce((acc, cur) => {
             const entry = map[cur];

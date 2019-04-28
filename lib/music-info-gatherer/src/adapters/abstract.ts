@@ -16,6 +16,7 @@ export interface SearchReturn {
         name?: string,
     }
     views?: number;
+    comments?: number;
 }
 
 export interface Adapter {

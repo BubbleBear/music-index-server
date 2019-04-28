@@ -20,7 +20,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
                 'x-youtube-client-version': '2.20190423',
                 connection: 'keep-alive',
             },
-            httpsAgent: new ProxyAgent(this.proxy || 'http://localhost:6666'),
+            httpsAgent: new ProxyAgent(this.proxy),
             timeout: 20000,
         });
     }

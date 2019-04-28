@@ -9,6 +9,7 @@ import { normalizeString } from './utils';
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
+import { SearchReturn } from '../lib/music-info-gatherer/src/adapters/abstract';
 // import puppeteer from 'puppeteer';
 
 const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
@@ -244,7 +245,12 @@ export default class Service {
         }
     }
 
-    public async searchTrack(songName: string, artistName: string, platforms?: string[]) {
+    public async searchTrack(songName: string, artistName: string,
+        { platform, albumId, companyId }: {
+            platform?: string,
+            albumId?: number | string,
+            companyId?: number | string,
+        } = {}) {
         await this.sync();
 
         try {
@@ -265,54 +271,63 @@ export default class Service {
         const results = await this.gatherer.search(songName, artistName);
         await this.redis.incr('count');
 
-        const bestMatches = Object.keys(results).reduce((acc, cur) => {
-            acc[cur] = (results as any)[cur].filter((v: any) => {
+        const bestMatches = (Object.keys(results) as Array<keyof typeof results>)
+            .reduce((acc, cur) => {
+                if (results[cur] !== null) {
+                    acc[cur] = results[cur]!.filter((v) => {
 
-                    return normalizeString(v.name).includes(normalizeString(songName))
-                        && (normalizeString(v.name).includes(normalizeString(artistName))
-                        || v.artists.reduce((acc: boolean, cur: any) => {
-                            
-                            return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                        }, false));
-                })[0] || null;
+                        return normalizeString(v.name).includes(normalizeString(songName))
+                            && (normalizeString(v.name).includes(normalizeString(artistName))
+                                || v.artists.reduce((acc: boolean, cur) => {
+    
+                                    return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                                }, false));
+                    })[0] || {};
+                } else {
+                    acc[cur] = null;
+                }
 
-            return acc;
-        }, {} as any);
+                return acc;
+            }, {} as { [prop in keyof typeof results]: SearchReturn | null });
 
-        await Promise.all(Object.keys(bestMatches).map(async (k: string) => {
-            if (bestMatches[k]) {
-                const upsert = await collection.updateOne(
-                    {
-                        alias: songName,
-                        'artists.name': artistName,
-                        channel: k,
-                    },
-                    {
-                        $set: Object.assign({
-                            channel: k,
-                            createdAt: Date.now(),
-                        }, bestMatches[k]),
-                        $setOnInsert: {
-                            alias: [],
-                        },
-                    },
-                    {
-                        upsert: true,
+        await Promise.all(
+            (Object.keys(bestMatches) as Array<keyof typeof results>)
+                .map(async (k) => {
+                    if (bestMatches[k]) {
+                        const result = await collection.findOneAndUpdate(
+                            {
+                                alias: songName,
+                                'artists.name': artistName,
+                                channel: k,
+                            },
+                            {
+                                $set: Object.assign({
+                                    channel: k,
+                                    createdAt: Date.now(),
+                                }, bestMatches[k]),
+                                $setOnInsert: {
+                                    alias: [],
+                                },
+                            },
+                            {
+                                upsert: true,
+                            }
+                        );
+
+                        await collection.updateOne(
+                            {
+                                _id: result.value._id,
+                            },
+                            {
+                                $addToSet: {
+                                    alias: songName,
+                                },
+                            }
+                        );
                     }
-                );
-
-                await collection.updateOne(
-                    {
-                        _id: upsert.upsertedId._id,
-                    },
-                    {
-                        $addToSet: {
-                            alias: songName,
-                        },
-                    }
-                );
-            }
-        }));
+                }
+            )
+        );
 
         console.log(songName, '#########', artistName);
 

@@ -7,7 +7,7 @@ import NeteaseMusicAdapter from './adapters/netease_music';
 import QQMusicAdapter from './adapters/qq_music';
 import SpotifyAdapter from './adapters/spotify';
 import YoutubeAdapter from './adapters/youtube';
-import { Adapter, SearchOptions } from './adapters/abstract';
+import { Adapter, SearchOptions, SearchReturn } from './adapters/abstract';
 import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 
@@ -30,6 +30,8 @@ const Adapters = {
     spotify: SpotifyAdapter,
     youtube: YoutubeAdapter,
 };
+
+export type adapters = typeof Adapters;
 
 export interface GathererOptions {
     proxies: {
@@ -67,6 +69,7 @@ export class Gatherer {
             timeout: 3 * 60,
             strategy: 'manual',
             async get() {
+                return undefined;
                 try {
                     // const url = 'http://183.129.244.16:88/open?user_name=acknoledgeap1&timestamp=1556419502&md5=E917014A583C3E575C65903449ABDC51&pattern=json&number=1';
                     const url = 'http://183.129.244.16:88/open?user_name=blindingdustap1&timestamp=1556432450&md5=8E0C3584FBB401A4A7B4297EBC6F3735&pattern=json&number=1';
@@ -104,6 +107,7 @@ export class Gatherer {
             name: 'foreignProxyPool',
             strategy: 'rotate',
             async get() {
+                return undefined;
                 const interval = 5000;
                 const availableKey = 'proxy#foreignProxyPool#unavailable';
 
@@ -199,13 +203,13 @@ export class Gatherer {
             }
         }
     
-        return [];
+        return null;
     }
 
     public async search(songName: string, artistName: string) {
         const options = { songName, artistName };
     
-        const results: any = {};
+        const results: { [prop in keyof typeof Adapters]?: SearchReturn[] | null } = {};
 
         const foreignProxy = await this.foreignProxyPool.get();
 
