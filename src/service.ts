@@ -274,24 +274,23 @@ export default class Service {
         const results = await this.gatherer.search(songName, artistName);
         await this.redis.incr('count');
 
-        const bestMatches = (Object.keys(results) as Array<keyof typeof results>)
-            .reduce((acc, cur) => {
-                if (results[cur] !== null) {
-                    acc[cur] = results[cur]!.filter((v) => {
+        const bestMatches = (Object.keys(results) as Array<keyof typeof results>).reduce((acc, cur) => {
+            if (results[cur] !== null) {
+                acc[cur] = results[cur]!.filter((v) => {
 
-                        return normalizeString(v.name).includes(normalizeString(songName))
-                            && (normalizeString(v.name).includes(normalizeString(artistName))
-                                || v.artists.reduce((acc: boolean, cur) => {
-    
-                                    return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                                }, false));
-                    })[0] || {};
-                } else {
-                    acc[cur] = null;
-                }
+                    return normalizeString(v.name).includes(normalizeString(songName))
+                        && (normalizeString(v.name).includes(normalizeString(artistName))
+                            || v.artists.reduce((acc: boolean, cur) => {
 
-                return acc;
-            }, {} as { [prop in keyof typeof results]: SearchReturn | null });
+                                return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                            }, false));
+                })[0] || {};
+            } else {
+                acc[cur] = null;
+            }
+
+            return acc;
+        }, {} as { [prop in keyof typeof results]: SearchReturn | null });
 
         await Promise.all(
             (Object.keys(bestMatches) as Array<keyof typeof results>)
@@ -314,6 +313,7 @@ export default class Service {
                             },
                             {
                                 upsert: true,
+                                returnOriginal: false,
                             }
                         );
 

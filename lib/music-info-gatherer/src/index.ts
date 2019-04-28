@@ -69,7 +69,6 @@ export class Gatherer {
             timeout: 3 * 60,
             strategy: 'manual',
             async get() {
-                return undefined;
                 try {
                     // const url = 'http://183.129.244.16:88/open?user_name=acknoledgeap1&timestamp=1556419502&md5=E917014A583C3E575C65903449ABDC51&pattern=json&number=1';
                     const url = 'http://183.129.244.16:88/open?user_name=blindingdustap1&timestamp=1556432450&md5=8E0C3584FBB401A4A7B4297EBC6F3735&pattern=json&number=1';
@@ -107,7 +106,6 @@ export class Gatherer {
             name: 'foreignProxyPool',
             strategy: 'rotate',
             async get() {
-                return undefined;
                 const interval = 5000;
                 const availableKey = 'proxy#foreignProxyPool#unavailable';
 
