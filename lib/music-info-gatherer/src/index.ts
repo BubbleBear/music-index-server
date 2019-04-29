@@ -20,6 +20,8 @@ global.info = info;
 global.warn = warn;
 global.error = error;
 
+const proxyConfig = require('../../../config/proxy.json');
+
 const lock = new AsyncLock();
 
 const Adapters = {
@@ -70,8 +72,7 @@ export class Gatherer {
             strategy: 'manual',
             async get() {
                 try {
-                    // const url = 'http://183.129.244.16:88/open?user_name=acknoledgeap1&timestamp=1556419502&md5=E917014A583C3E575C65903449ABDC51&pattern=json&number=1';
-                    const url = 'http://183.129.244.16:88/open?user_name=blindingdustap1&timestamp=1556432450&md5=8E0C3584FBB401A4A7B4297EBC6F3735&pattern=json&number=1';
+                    const url = proxyConfig.domestics[0];
                     const response = await axios(url);
                     const proxy = `http://${response.data.domain}:${response.data.port}`;
 
@@ -109,19 +110,7 @@ export class Gatherer {
                 const interval = 5000;
                 const availableKey = 'proxy#foreignProxyPool#unavailable';
 
-                const proxies = [
-                    'socks://127.0.0.1:7777',
-                    'socks://127.0.0.1:7778',
-                    'socks://127.0.0.1:7779',
-                    'socks://127.0.0.1:7780',
-                    'socks://127.0.0.1:7781',
-                    'socks://127.0.0.1:7782',
-                    'socks://127.0.0.1:7783',
-                    'socks://127.0.0.1:7784',
-                    'socks://127.0.0.1:7785',
-                    'socks://127.0.0.1:7786',
-                    'socks://127.0.0.1:7787',
-                ];
+                const proxies = proxyConfig.foreign;
 
                 const size = proxies.length;
 
