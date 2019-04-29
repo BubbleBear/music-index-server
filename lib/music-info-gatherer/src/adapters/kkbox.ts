@@ -4,7 +4,6 @@ import { trim } from '../lib/utils';
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 import { JSDOM } from 'jsdom';
-import { sify } from 'chinese-conv';
 
 export default class KkboxAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {
@@ -37,14 +36,14 @@ export default class KkboxAdapter extends AbstractAdapter {
             const albumName = (aa[1] as any).title;
 
             return {
-                name: sify(trim(songName!, { pattern: ' \n' })),
+                name: trim(songName!, { pattern: ' \n' }),
                 artists: [
                     {
-                        name: sify(artistName),
+                        name: artistName,
                     },
                 ],
                 album: {
-                    name: sify(albumName),
+                    name: albumName,
                 },
                 url,
             };

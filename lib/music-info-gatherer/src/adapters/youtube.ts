@@ -2,7 +2,6 @@ import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
-import { sify } from 'chinese-conv';
 
 export default class YoutubeAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {
@@ -49,7 +48,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
                 });
 
             return {
-                name: sify(v.title.simpleText),
+                name: v.title.simpleText,
                 artists,
                 album: {},
                 views,

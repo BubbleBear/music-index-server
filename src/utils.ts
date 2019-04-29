@@ -1,3 +1,5 @@
+import { sify } from 'chinese-conv';
+
 export function list2csv(list: any[], map?: object | Map<any, any>) {
     let headerMap: Map<any, any> | undefined;
 
@@ -38,7 +40,7 @@ export function filterUndefinedAndEmpty(obj: object | any[] | any): any {
 }
 
 export function normalizeString(target: string) {
-    const result = target.toLowerCase().replace(/_/g, '-');
+    const result = sify(target).toLowerCase().replace(/_/g, '-');
 
     return result;
 }
