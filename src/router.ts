@@ -296,13 +296,15 @@ router.get('/get_tracks', async (ctx, next) => {
                 }
 
                 if (d[k]) {
-                    switch (k) {
-                        case 'itunes': acc[cur.name][k] = '存在'; break;
-                        case 'qq': acc[cur.name][k] = d[k]!.comments; break;
-                        case 'netease': acc[cur.name][k] = d[k]!.comments; break;
-                        case 'kkbox': acc[cur.name][k] = '存在'; break;
-                        case 'spotify': acc[cur.name][k] = '存在'; break;
-                        case 'youtube': acc[cur.name][k] = d[k]!.views; break;
+                    if (d[k]!.name) {
+                        switch (k) {
+                            case 'itunes': acc[cur.name][k] = '存在'; break;
+                            case 'qq': acc[cur.name][k] = d[k]!.comments; break;
+                            case 'netease': acc[cur.name][k] = d[k]!.comments; break;
+                            case 'kkbox': acc[cur.name][k] = '存在'; break;
+                            case 'spotify': acc[cur.name][k] = '存在'; break;
+                            case 'youtube': acc[cur.name][k] = d[k]!.views; break;
+                        }
                     }
                 } else {
                     acc[cur.name][k] = '查询失败';

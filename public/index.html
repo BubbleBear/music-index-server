@@ -392,12 +392,12 @@
     formatTrackList()
     var table = document.getElementById('track-list')
     document.getElementById('track-list-warp').style.display = 'block'
-    table.children[1].innerHTML += (data.itunes ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[2].innerHTML += (data.kkbox ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[3].innerHTML += (data.spotify ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[4].innerHTML += (data.youtube ? '<li>' + data.youtube.views + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
-    table.children[5].innerHTML += (data.qq ? '<li>' + data.qq.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
-    table.children[6].innerHTML += (data.netease ? '<li>' + data.netease.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
+    table.children[1].innerHTML += (data.itunes && data.itunes.name ? '<li>✔️</li>' : '<li>❌</li>')
+    table.children[2].innerHTML += (data.kkbox && data.kkbox.name ? '<li>✔️</li>' : '<li>❌</li>')
+    table.children[3].innerHTML += (data.spotify && data.spotify.name ? '<li>✔️</li>' : '<li>❌</li>')
+    table.children[4].innerHTML += (data.youtube && data.youtube.name ? '<li>' + data.youtube.views + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
+    table.children[5].innerHTML += (data.qq && data.qq.name ? '<li>' + data.qq.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
+    table.children[6].innerHTML += (data.netease && data.netease.name ? '<li>' + data.netease.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
   }
   function getDownloadList() {
     ctrlLoading(true)
