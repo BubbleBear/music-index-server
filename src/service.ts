@@ -283,7 +283,8 @@ export default class Service {
                             || v.artists.reduce((acc: boolean, cur) => {
 
                                 return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                            }, false));
+                            }, false)
+                            || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`)));
                 })[0] || {};
             } else {
                 acc[cur] = null;
