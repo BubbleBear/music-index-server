@@ -249,9 +249,9 @@ export default class Service {
     }
 
     public async searchTrack(songName: string, artistName: string,
-        { platform, albumId, companyId }: {
+        { platform, albumName, companyId }: {
             platform?: string,
-            albumId?: number | string,
+            albumName?: number | string,
             companyId?: number | string,
         } = {}) {
         await this.sync();
