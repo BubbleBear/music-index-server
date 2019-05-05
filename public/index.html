@@ -486,7 +486,7 @@
   document.getElementById('dcb').onclick = downloadMD
   document.getElementById('ddb').onclick = downloadDL
 
-  function getTrack(songName, artistName) {
+  function getTrack(songName, artistName, albumName) {
     ctrlLoading(true)
     window.axios.get('/api/v1/get_track', { params: { song_name: songName, artist_name: artistName, album_name: albumName } }).then(function (res) {
       ctrlLoading(false)

@@ -109,7 +109,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const dates = new Set();
 
-    const statisticsMap = result.reduce((acc: any, cur: any) => {
+    const statisticsMap = result.reduce((acc, cur) => {
         const createdAt = moment.unix(cur.createdAt).format('YYYY-MM-DD');
         dates.has(createdAt) || dates.add(createdAt);
         acc[cur.company_id] || (acc[cur.company_id] = cur);
@@ -202,7 +202,9 @@ router.get('/company_statistics/dates', async (ctx, next) => {
 router.get('/get_track', async (ctx, next) => {
     const query = ctx.query;
 
-    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name, query.album_name);
+    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name, {
+        albumName: query.album_name,
+    });
 
     // Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
     //     if (bestMatches[matchKey]) {
@@ -241,7 +243,7 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
-    const tracks = embeded.reduce((tacc: any, company: any) => {
+    const tracks = embeded.reduce((tacc, company) => {
         const albums = company.albumList.reduce((aacc: any, album: any) => {
             const tr = album.list.map((track: any) => {
                 const s = track.singer[0];

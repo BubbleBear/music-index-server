@@ -278,12 +278,14 @@ export default class Service {
                 acc[cur] = results[cur]!.filter((v) => {
 
                     return normalizeString(v.name).includes(normalizeString(songName))
-                        && (normalizeString(v.name).includes(normalizeString(artistName))
+                        && (
+                            normalizeString(v.name).includes(normalizeString(artistName))
                             || v.artists.reduce((acc: boolean, cur) => {
 
                                 return acc || normalizeString(cur.name).includes(normalizeString(artistName));
                             }, false)
-                            || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`)));
+                            || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`))
+                        );
                 })[0] || {};
             } else {
                 acc[cur] = null;
