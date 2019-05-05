@@ -20,7 +20,7 @@ global.info = info;
 global.warn = warn;
 global.error = error;
 
-const proxyConfig = require('../../../config/proxy.json');
+const proxyConfig = require('../../../../config/proxy.json');
 
 const lock = new AsyncLock();
 

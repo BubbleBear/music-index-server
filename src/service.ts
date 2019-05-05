@@ -3,13 +3,13 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as util from 'util';
 
-import { Gatherer } from '../lib/music-info-gatherer/src';
+import { Gatherer } from './lib/music-info-gatherer/src';
 import { normalizeString } from './utils';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
-import { SearchReturn } from '../lib/music-info-gatherer/src/adapters/abstract';
+import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
 // import puppeteer from 'puppeteer';
 
 // this is also referred in crawler script

@@ -6,8 +6,8 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 import Router from 'koa-router';
 import moment from 'moment';
 import plimit from 'p-limit';
-import { SearchReturn } from '../lib/music-info-gatherer/src/adapters/abstract';
-import { adapters } from '../lib/music-info-gatherer/src';
+import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
+import { adapters } from './lib/music-info-gatherer/src';
 
 const router = new Router();
 
@@ -109,7 +109,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
 
     const dates = new Set();
 
-    const statisticsMap = result.reduce((acc, cur) => {
+    const statisticsMap = result.reduce((acc: any, cur: any) => {
         const createdAt = moment.unix(cur.createdAt).format('YYYY-MM-DD');
         dates.has(createdAt) || dates.add(createdAt);
         acc[cur.company_id] || (acc[cur.company_id] = cur);
@@ -241,7 +241,7 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
-    const tracks = embeded.reduce((tacc, company) => {
+    const tracks = embeded.reduce((tacc: any, company: any) => {
         const albums = company.albumList.reduce((aacc: any, album: any) => {
             const tr = album.list.map((track: any) => {
                 const s = track.singer[0];
