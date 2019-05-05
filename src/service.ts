@@ -272,7 +272,6 @@ export default class Service {
         }).toArray();
 
         const results = await this.gatherer.search(songName, artistName);
-        await this.redis.incr('count');
 
         const bestMatches = (Object.keys(results) as Array<keyof typeof results>).reduce((acc, cur) => {
             if (results[cur] !== null) {

@@ -220,10 +220,6 @@ if (require.main === module) {
     !async function() {
         const gatherer = new Gatherer({
             proxies: {
-                // itunes: proxy,
-                // netease: proxy,
-                // qq: proxy,
-                // kkbox: proxy,
             },
         });
 
