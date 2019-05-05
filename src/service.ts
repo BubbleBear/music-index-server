@@ -334,7 +334,7 @@ export default class Service {
             )
         );
 
-        console.log(songName, '#########', artistName);
+        console.log(songName, '#########', artistName, '#########', albumName);
 
         return bestMatches;
     }
