@@ -249,6 +249,10 @@
           <span>歌 手 名 :</span>
           <input type="text" id="artist-name" placeholder="请输入歌手名称">
         </div>
+        <div class="input-wrap">
+          <span>专 辑 名 :</span>
+          <input type="text" id="album-name" placeholder="请输入专辑名称">
+        </div>
         <div class="result"></div>
       </div>
       <button id="single-track" class="download">查询</button>
@@ -484,7 +488,7 @@
 
   function getTrack(songName, artistName) {
     ctrlLoading(true)
-    window.axios.get('/api/v1/get_track', { params: { song_name: songName, artist_name: artistName } }).then(function (res) {
+    window.axios.get('/api/v1/get_track', { params: { song_name: songName, artist_name: artistName, album_name: albumName } }).then(function (res) {
       ctrlLoading(false)
       creatTrackList(res.data.data)
       document.getElementById('song-name-data').innerHTML = songName
@@ -500,7 +504,7 @@
   }
 
   document.getElementById('single-track').onclick = function () {
-    getTrack(document.querySelector('#song-name').value, document.querySelector('#artist-name').value)
+    getTrack(document.querySelector('#song-name').value, document.querySelector('#artist-name').value, document.querySelector('#album-name').value)
   }
 </script>
 

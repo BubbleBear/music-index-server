@@ -60,7 +60,7 @@ export default class SpotifyAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new SpotifyAdapter({
-            proxy: 'socks://127.0.0.1:7778',
+            proxy: 'http://127.0.0.1:6666',
         });
         const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
 

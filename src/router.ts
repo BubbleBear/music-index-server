@@ -202,7 +202,7 @@ router.get('/company_statistics/dates', async (ctx, next) => {
 router.get('/get_track', async (ctx, next) => {
     const query = ctx.query;
 
-    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name)
+    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name, query.album_name);
 
     // Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
     //     if (bestMatches[matchKey]) {
@@ -249,6 +249,7 @@ router.get('/get_tracks', async (ctx, next) => {
                 return {
                     songName: track.songname,
                     artistName: s ? s.name : '',
+                    albumName: album.name || undefined,
                 };
             });
 
@@ -267,7 +268,9 @@ router.get('/get_tracks', async (ctx, next) => {
                 return limit(async () => {
                     return {
                         name: track.songName,
-                        data: await ctx.service.searchTrack(track.songName, track.artistName),
+                        data: await ctx.service.searchTrack(track.songName, track.artistName, {
+                            albumName: track.albumName,
+                        }),
                     };
                 });
             }
