@@ -224,7 +224,7 @@ if (require.main === module) {
         });
 
         const r = await gatherer.search('东西', '林俊呈');
-        const ws = fs.createWriteStream(path.join(__dirname, '../../../x.json')); 
+        const ws = fs.createWriteStream(path.join(__dirname, '../../../../x.json')); 
         ws.write(JSON.stringify(r));
         ws.end();
 
