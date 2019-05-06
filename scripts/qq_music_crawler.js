@@ -17,7 +17,7 @@ axios.default.timeout = 5000;
 
 const REDIS_QMC_STATUS = 'qq.music.crawler.status';
 
-const REDIS_QMC_COMPANY_KEY = 'qq.music.crawler.company';
+const REDIS_QMC_COMPANY_SET = 'qq.music.crawler.company';
 
 const MONGO_COMPANY_COLLECTION = 'company';
 
@@ -49,7 +49,7 @@ async function getDB() {
 }
 
 async function cleanseCache() {
-    return await redis.del(REDIS_QMC_COMPANY_KEY);
+    return await redis.del(REDIS_QMC_COMPANY_SET);
 }
 
 async function getAlbumInfo(albumMid) {
@@ -291,7 +291,7 @@ const scheduler = new Scheduler({
         // console.log(scheduler.pendingTasks.length, scheduler.runningTasks.length)
         console.log(`company: ${task.companyId} done.`);
     
-        await redis.sadd(REDIS_QMC_COMPANY_KEY, task.companyId);
+        await redis.sadd(REDIS_QMC_COMPANY_SET, task.companyId);
     },
     async onError(err, task) {
         console.log(err.message, err.stack)
@@ -325,7 +325,7 @@ async function run() {
 
     await getDB();
 
-    const visited = await redis.smembers(REDIS_QMC_COMPANY_KEY);
+    const visited = await redis.smembers(REDIS_QMC_COMPANY_SET);
 
     const visitedMap = visited.reduce((acc, cur) => {
         acc[cur] = true;

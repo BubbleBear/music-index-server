@@ -10,18 +10,22 @@ import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
 import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
+import { adapters } from './lib/music-info-gatherer/src';
 // import puppeteer from 'puppeteer';
+import plimit from 'p-limit';
+
+const limit = plimit(10);
 
 // this is also referred in crawler script
 const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
 
-const REDIS_QQ_CRALWER_KEY = 'qq.music.crawler.company';
+const REDIS_QQ_CRALWER_SET = 'qq.music.crawler.company';
 
-const REDIS_QQ_STATISTICS_KEY = 'qq.music.statistics.date';
+const REDIS_QQ_STATISTICS_SET = 'qq.music.statistics.date';
 
-const REDIS_DOWNLOADING_FILE_SET_KEY = 'downloading.file';
+const REDIS_DOWNLOADING_FILE_SET = 'downloading.file';
 
-const REDIS_CACHED_FILE_MAP_KEY = 'cached.file';
+const REDIS_CACHED_FILE_MAP = 'cached.file';
 
 export default class Service {
     client!: MongoClient;
@@ -45,7 +49,7 @@ export default class Service {
 
         // this._browser = puppeteer.launch({
         //     args: [
-        //         '--proxy-server=127.0.0.1:6666',
+        //         '--proxy-server=127.0.0.1:7777',
         //     ]
         // });
 
@@ -131,20 +135,13 @@ export default class Service {
     }
 
     async cleanseCrawlerCache() {
-        return await this.redis.del(REDIS_QQ_CRALWER_KEY);
+        return await this.redis.del(REDIS_QQ_CRALWER_SET);
     }
 
     async createCompanyStatistics(assignedDate?: number | string) {
         await this.sync();
 
-        try {
-            await this.db.createCollection('company_statistics');
-        } catch (e) {}
-
-        const collection = this.db.collection('company_statistics');
-
-        (await collection.indexExists('createdAt')) || (await this.db.createIndex('company_statistics', 'createdAt'));
-        (await collection.indexExists([ 'company_id', 'createdAt' ])) || (await this.db.createIndex('company_statistics', [ 'company_id', 'createdAt' ]));
+        const collection = await this.prepareCollection('company_statistics');
 
         const analysed = await collection.findOne({ createdAt: moment(assignedDate).unix() });
 
@@ -189,7 +186,7 @@ export default class Service {
 
         const date2 = moment(assignedDate).format('YYYY-MM-DD');
 
-        await this.redis.sadd(REDIS_QQ_STATISTICS_KEY, date1, date2);
+        await this.redis.sadd(REDIS_QQ_STATISTICS_SET, date1, date2);
 
         return true;
     }
@@ -210,7 +207,7 @@ export default class Service {
     async getStatisticsDates() {
         await this.sync();
 
-        const dates = await this.redis.smembers(REDIS_QQ_STATISTICS_KEY);
+        const dates = await this.redis.smembers(REDIS_QQ_STATISTICS_SET);
 
         return dates;
     }
@@ -248,28 +245,35 @@ export default class Service {
         }
     }
 
-    public async searchTrack(songName: string, artistName: string,
-        { platform, albumName, companyId }: {
+    public async searchTracks(options: {
+        songName: string,
+        artistName: string,
+        platform?: string,
+        albumName?: number | string,
+        companyId?: number | string,
+    }[]) {
+        return await Promise.all(
+            options.map((option) => {
+                return limit(async () => {
+                    return {
+                        name: option.songName,
+                        data: await this.searchTrack(option),
+                    };
+                });
+            })
+        );
+    }
+
+    public async searchTrack({ songName, artistName, platform, albumName, companyId }: {
+            songName: string,
+            artistName: string,
             platform?: string,
             albumName?: number | string,
             companyId?: number | string,
-        } = {}) {
+        }) {
         await this.sync();
 
-        try {
-            await this.db.createCollection('track');
-        } catch (e) {}
-
-        const collection = this.db.collection('track');
-
-        (await collection.indexExists('channel')) || (await this.db.createIndex('track', 'channel'));
-        (await collection.indexExists('artists.name')) || (await this.db.createIndex('track', 'artists.name'));
-        (await collection.indexExists([ 'name', 'artists.name' ])) || (await this.db.createIndex('track', [ 'name', 'artists.name' ]));
-
-        const cached = await collection.find({
-            alias: songName,
-            'artists.name': artistName,
-        }).toArray();
+        // const cachedTrack = await this.findCachedTracks(songName, artistName);
 
         const results = await this.gatherer.search(songName, artistName);
 
@@ -292,51 +296,102 @@ export default class Service {
             }
 
             return acc;
-        }, {} as { [prop in keyof typeof results]: SearchReturn | null });
+        }, {} as { [prop in keyof adapters]?: SearchReturn | null });
 
-        await Promise.all(
-            (Object.keys(bestMatches) as Array<keyof typeof results>)
-                .map(async (k) => {
-                    if (bestMatches[k]) {
-                        const result = await collection.findOneAndUpdate(
-                            {
-                                alias: songName,
-                                'artists.name': artistName,
-                                channel: k,
-                            },
-                            {
-                                $set: Object.assign({
-                                    channel: k,
-                                    createdAt: Date.now(),
-                                }, bestMatches[k]),
-                                $setOnInsert: {
-                                    alias: [],
-                                },
-                            },
-                            {
-                                upsert: true,
-                                returnOriginal: false,
-                            }
-                        );
-
-                        await collection.updateOne(
-                            {
-                                _id: result.value._id,
-                            },
-                            {
-                                $addToSet: {
-                                    alias: songName,
-                                },
-                            }
-                        );
-                    }
-                }
-            )
-        );
+        // await Promise.all(
+        //     (Object.keys(bestMatches) as Array<keyof adapters>)
+        //         .map(async (k) => {
+        //             if (bestMatches[k]) {
+        //                 await this.cacheTrack(songName, artistName, k, bestMatches[k]!);
+        //             }
+        //         }
+        //     )
+        // );
 
         console.log(songName, '#########', artistName, '#########', albumName);
 
         return bestMatches;
+    }
+
+    public async findCachedTracks(songName: string, artistName: string) {
+        const collection = await this.prepareCollection('track');
+
+        const cached = await collection.find({
+            alias: songName,
+            'artists.name': artistName,
+        }).toArray();
+
+        return cached;
+    }
+
+    public async cacheTrack(alias: string, artistName: string, channel: string, track: SearchReturn) {
+        const collection = await this.prepareCollection('track');
+
+        const result = await collection.findOneAndUpdate(
+            {
+                alias,
+                'artists.name': artistName,
+                channel,
+            },
+            {
+                $set: Object.assign({
+                    channel,
+                    createdAt: Date.now(),
+                }, track),
+                $setOnInsert: {
+                    alias: [],
+                },
+            },
+            {
+                upsert: true,
+                returnOriginal: false,
+            }
+        );
+
+        await collection.updateOne(
+            {
+                _id: result.value._id,
+            },
+            {
+                $addToSet: {
+                    alias,
+                },
+            }
+        );
+
+        return result;
+    }
+
+    protected async prepareCollection(collectionName: string) {
+        await this.sync();
+
+        try {
+            await this.db.createCollection(collectionName);
+        } catch (e) {}
+
+        const collection = this.db.collection(collectionName);
+
+        const indexMap: { [prop: string]: Array<any> } = {
+            'track': [
+                'channel',
+                'artists.name',
+                [ 'name', 'artists.name' ],
+            ],
+            'company_statistics': [
+                'createdAt',
+                [ 'company_id', 'createdAt' ],
+            ],
+        };
+
+        await Promise.all(
+            indexMap[collectionName].map(
+                async (index) => {
+                    (await collection.indexExists('channel')) || (await this.db.createIndex('track', 'channel'));
+                }
+            )
+        );
+
+        return collection;
     }
 
     // public async screenShot(url: string, filepath: string) {
@@ -355,17 +410,17 @@ export default class Service {
     // }
 
     public async cached(redisKey: string) {
-        const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+        const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET, redisKey);
 
         return Boolean(cached);
     }
 
     public async markDownloading(redisKey: string) {
-        await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+        await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET, redisKey);
     }
 
     public async unmarkDownloading(redisKey: string) {
-        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET, redisKey);
     }
 
     public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
@@ -374,24 +429,24 @@ export default class Service {
         ws.write(content);
         ws.end();
 
-        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET_KEY, redisKey);
+        await this.unmarkDownloading(redisKey);
 
-        await this.redis.hset(REDIS_CACHED_FILE_MAP_KEY, redisKey, filepath);
+        await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
 
     public async listDownloadingFiles() {
-        return await this.redis.smembers(REDIS_DOWNLOADING_FILE_SET_KEY);
+        return await this.redis.smembers(REDIS_DOWNLOADING_FILE_SET);
     }
 
     public async listCachedFiles() {
-        return await this.redis.hkeys(REDIS_CACHED_FILE_MAP_KEY);
+        return await this.redis.hkeys(REDIS_CACHED_FILE_MAP);
     }
 
     public async deleteCachedFile(redisKey: string) {
         try {
-            const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+            const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
             filepath && await util.promisify(fs.unlink)(filepath);
-            await this.redis.hdel(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+            await this.redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
         } catch (e) {
             global.error({
                 module: 'main',
@@ -406,7 +461,7 @@ export default class Service {
     }
 
     public async openFileStream(redisKey: string) {
-        const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP_KEY, redisKey);
+        const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
 
         return fs.createReadStream(filepath!);
     }

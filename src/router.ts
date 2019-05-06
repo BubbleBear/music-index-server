@@ -5,13 +5,8 @@ import { list2csv, filterUndefinedAndEmpty } from './utils';
 
 import Router from 'koa-router';
 import moment from 'moment';
-import plimit from 'p-limit';
-import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
-import { adapters } from './lib/music-info-gatherer/src';
 
 const router = new Router();
-
-const limit = plimit(10);
 
 router.get('/company/:companyId/detail', async (ctx, next) => {
     const params = ctx.params;
@@ -202,7 +197,9 @@ router.get('/company_statistics/dates', async (ctx, next) => {
 router.get('/get_track', async (ctx, next) => {
     const query = ctx.query;
 
-    const bestMatches = await ctx.service.searchTrack(query.song_name, query.artist_name, {
+    const bestMatches = await ctx.service.searchTrack({
+        songName: query.song_name,
+        artistName: query.artist_name,
         albumName: query.album_name,
     });
 
@@ -252,6 +249,7 @@ router.get('/get_tracks', async (ctx, next) => {
                     songName: track.songname,
                     artistName: s ? s.name : '',
                     albumName: album.name || undefined,
+                    companyId: company.company_id,
                 };
             });
 
@@ -261,23 +259,7 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    Promise.all<{
-        name: string,
-        data: { [prop in keyof adapters]: SearchReturn | null },
-    }>(
-        tracks.map(
-            (track: any) => {
-                return limit(async () => {
-                    return {
-                        name: track.songName,
-                        data: await ctx.service.searchTrack(track.songName, track.artistName, {
-                            albumName: track.albumName,
-                        }),
-                    };
-                });
-            }
-        )
-    )
+    ctx.service.searchTracks(tracks)
     .then(async (result) => {
         if (!result || !Array.isArray(result) || result.length === 0) {
             const csv = '公司不存在或公司没有歌曲';
