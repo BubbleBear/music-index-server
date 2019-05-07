@@ -225,16 +225,18 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const companyIds = [ query.company_id ];
 
-    const cached = await ctx.service.cached(query.company_id);
+    const downloading = await ctx.service.getDownloadingStatus(query.company_id);
 
-    if (cached) {
+    if (downloading) {
         ctx.body = {
             success: true,
-            message: '已下载',
+            message: '正在下载',
         };
     
         return await next();
     }
+
+    await ctx.service.deleteCachedFile(query.company_id);
 
     await ctx.service.markDownloading(query.company_id);
 
@@ -261,6 +263,12 @@ router.get('/get_tracks', async (ctx, next) => {
 
     ctx.service.searchTracks(tracks)
     .then(async (result) => {
+        const downloading = await ctx.service.getDownloadingStatus(query.company_id);
+
+        if (!downloading) {
+            return;
+        }
+
         if (!result || !Array.isArray(result) || result.length === 0) {
             const csv = '公司不存在或公司没有歌曲';
             await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
@@ -284,7 +292,7 @@ router.get('/get_tracks', async (ctx, next) => {
 
                 if (d[k]) {
                     if (d[k]!.name) {
-                        switch (k) {
+                        switch (k as string) {
                             case 'itunes': acc[cur.name][k] = '存在'; break;
                             case 'qq': acc[cur.name][k] = d[k]!.comments; break;
                             case 'netease': acc[cur.name][k] = d[k]!.comments; break;
@@ -354,7 +362,7 @@ router.get('/cancel_downloading', async (ctx, next) => {
 router.get('/delete_cached_file', async (ctx, next) => {
     const query = ctx.query;
 
-    await ctx.service.deleteCachedFile(query.filename);
+    await ctx.service.deleteCachedFile(query.company_id);
 
     ctx.body = {
         success: true,

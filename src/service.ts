@@ -23,7 +23,7 @@ const REDIS_QQ_CRALWER_SET = 'qq.music.crawler.company';
 
 const REDIS_QQ_STATISTICS_SET = 'qq.music.statistics.date';
 
-const REDIS_DOWNLOADING_FILE_SET = 'downloading.file';
+const REDIS_DOWNLOADING_STATUS_SET = 'downloading.file';
 
 const REDIS_CACHED_FILE_MAP = 'cached.file';
 
@@ -257,7 +257,7 @@ export default class Service {
                 return limit(async () => {
                     const status = 
                         option.companyId
-                        ? await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET, option.companyId.toString())
+                        ? await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
                         : 0;
 
                     return {
@@ -414,18 +414,18 @@ export default class Service {
     //     }
     // }
 
-    public async cached(redisKey: string) {
-        const cached = await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET, redisKey);
+    public async getDownloadingStatus(redisKey: string) {
+        const downloading = await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, redisKey);
 
-        return Boolean(cached);
+        return Boolean(downloading);
     }
 
     public async markDownloading(redisKey: string) {
-        await this.redis.sadd(REDIS_DOWNLOADING_FILE_SET, redisKey);
+        await this.redis.sadd(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
     public async unmarkDownloading(redisKey: string) {
-        await this.redis.srem(REDIS_DOWNLOADING_FILE_SET, redisKey);
+        await this.redis.srem(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
     public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
@@ -440,7 +440,7 @@ export default class Service {
     }
 
     public async listDownloadingFiles() {
-        return await this.redis.smembers(REDIS_DOWNLOADING_FILE_SET);
+        return await this.redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
     }
 
     public async listCachedFiles() {
