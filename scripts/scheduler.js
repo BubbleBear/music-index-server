@@ -49,7 +49,6 @@ class Scheduler extends events_1.EventEmitter {
     }
     destroy() {
         this.pendingTasks.destroy();
-        this.schedule = () => { };
     }
     schedule(offset = 0) {
         this.runningTasks.forEach(node => node.value.status > TaskStatus.running && node.delete());
@@ -116,13 +115,19 @@ if (require.main === module) {
                         // console.log('running length: ', schd.runningTasks.length)
                         console.log('pending: ', schd.pendingTasks.map(node => node.value.status.toString()).toArray().join(', '));
                         console.log('running: ', schd.runningTasks.map(node => node.value.status.toString()).toArray().join(', '));
-                        console.log('\n');
-                        yield schd.asyncPush(n + 5);
-                        yield new Promise(r => {
-                            setTimeout(() => {
-                                r();
-                            }, 1000);
-                        });
+                        // console.log('\n');
+                        // await schd.asyncPush(n + 5);
+                        // await new Promise(r => {
+                        //     setTimeout(() => {
+                        //         r();
+                        //     }, 1000);
+                        // })
+                        schd.destroy();
+                    });
+                },
+                onError(e) {
+                    return __awaiter(this, void 0, void 0, function* () {
+                        console.log(e);
                     });
                 }
             });
@@ -130,6 +135,7 @@ if (require.main === module) {
                 return yield schd.asyncPush(k);
             })));
             yield schd.dispatch();
+            console.log('all done');
         });
     }();
 }

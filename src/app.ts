@@ -1,3 +1,4 @@
+import * as fs from 'fs';
 import * as path from 'path';
 
 import Service from './service';
@@ -12,6 +13,10 @@ import cors from '@koa/cors';
 global.info = info;
 global.warn = warn;
 global.error = error;
+
+try {
+    fs.mkdirSync(path.join(__dirname, '../runtime'));
+} catch (e) {}
 
 const app = new Koa();
 

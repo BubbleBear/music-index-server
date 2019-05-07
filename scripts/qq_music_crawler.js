@@ -141,12 +141,6 @@ async function getCompanyInGeneral(companyId) {
 }
 
 async function getCompany(companyId) {
-    const crawlerStatus = await redis.get(REDIS_QMC_STATUS);
-
-    if (crawlerStatus !== 'running') {
-        return;
-    }
-
     await getCompanyInGeneral(companyId);
 
     const albumLists = [];
@@ -292,6 +286,13 @@ const scheduler = new Scheduler({
         console.log(`company: ${task.companyId} done.`);
     
         await redis.sadd(REDIS_QMC_COMPANY_SET, task.companyId);
+
+        const crawlerStatus = await redis.get(REDIS_QMC_STATUS);
+
+        if (crawlerStatus !== 'running') {
+            console.log('destroying scheduler');
+            scheduler.destroy();
+        }
     },
     async onError(err, task) {
         console.log(err.message, err.stack)

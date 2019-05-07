@@ -250,14 +250,19 @@ export default class Service {
         artistName: string,
         platform?: string,
         albumName?: number | string,
-        companyId?: number | string,
+        companyId: number | string,
     }[]) {
         return await Promise.all(
             options.map((option) => {
                 return limit(async () => {
+                    const status = 
+                        option.companyId
+                        ? await this.redis.sismember(REDIS_DOWNLOADING_FILE_SET, option.companyId.toString())
+                        : 0;
+
                     return {
                         name: option.songName,
-                        data: await this.searchTrack(option),
+                        data: status ? await this.searchTrack(option) : {},
                     };
                 });
             })
