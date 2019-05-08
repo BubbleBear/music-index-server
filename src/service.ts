@@ -3,18 +3,16 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as util from 'util';
 
-import { Gatherer } from './lib/music-info-gatherer/src';
+import { Gatherer, adapters } from './lib/music-info-gatherer/src';
+import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
 import { normalizeString } from './utils';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
-import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
-import { adapters } from './lib/music-info-gatherer/src';
-// import puppeteer from 'puppeteer';
 import plimit from 'p-limit';
 
-const limit = plimit(10);
+const searchLimit = plimit(10);
 
 // this is also referred in crawler script
 const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
@@ -32,26 +30,20 @@ export default class Service {
 
     redis: Redis.Redis;
 
-    // browser!: puppeteer.Browser;
-
     private _client: Promise<MongoClient>;
 
     private db!: Db;
 
-    // private _browser: Promise<puppeteer.Browser>;
-
     private gatherer: Gatherer;
 
     constructor() {
+        const proxyConfig = require('../config/proxy.json');
+
         this._client = mongo.connect('mongodb://localhost:27017', {
             useNewUrlParser: true,
         });
 
-        // this._browser = puppeteer.launch({
-        //     args: [
-        //         '--proxy-server=127.0.0.1:7777',
-        //     ]
-        // });
+        process.setMaxListeners(20);
 
         this.redis = new Redis({
             host: 'localhost',
@@ -69,8 +61,6 @@ export default class Service {
 
         this.client = await this._client;
         this.db = this.client.db('qq_music_crawler');
-
-        // this.browser = await this._browser;
     }
 
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
@@ -254,7 +244,7 @@ export default class Service {
     }[]) {
         return await Promise.all(
             options.map((option) => {
-                return limit(async () => {
+                return searchLimit(async () => {
                     const status = 
                         option.companyId
                         ? await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
@@ -399,20 +389,8 @@ export default class Service {
         return collection;
     }
 
-    // public async screenShot(url: string, filepath: string) {
-    //     await this.sync();
-        
-    //     try {
-    //         const page = await this.browser.newPage();
-    //         await page.setCacheEnabled(true);
-    //         await page.goto(url, {
-    //             timeout: 100000,
-    //         });
-    //         await page.screenshot({ path: filepath });
-    //     } catch (e) {
-    //         console.log(e.message)
-    //     }
-    // }
+    public async screenShot(url: string, filepath: string) {
+    }
 
     public async getDownloadingStatus(redisKey: string) {
         const downloading = await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, redisKey);
@@ -433,8 +411,6 @@ export default class Service {
         ws.write('\ufeff');
         ws.write(content);
         ws.end();
-
-        await this.unmarkDownloading(redisKey);
 
         await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
@@ -477,7 +453,7 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
 
-        await service.createCompanyStatistics();
+        await service.screenShot('https://www.google.com', '1.png');
 
         await service.client.close();
         service.redis.disconnect();

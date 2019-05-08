@@ -1,5 +1,7 @@
+import * as fs from 'fs';
 import * as stream from 'stream';
 import * as path from 'path';
+import * as util from 'util';
 
 import { list2csv, filterUndefinedAndEmpty } from './utils';
 
@@ -319,7 +321,25 @@ router.get('/get_tracks', async (ctx, next) => {
 
         const csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
 
-        await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
+        await util.promisify(fs.mkdir)(path.join(__dirname, '../runtime', query.company_id), {
+            recursive: true,
+        });
+
+        await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id, 'collection.csv'), query.company_id);
+
+        await Promise.all(result.map(async r => {
+            const d = r.data;
+            await Promise.all((Object.keys(d) as Array<keyof typeof d>).map(async k => {
+                if (d[k] && d[k]!.url) {
+                    const url = d[k]!.url!;
+                    const filename = path.join(__dirname, '../runtime', query.company_id, `${r.name}_${k}.png`);
+
+                    await ctx.service.screenShot(url, filename);
+                }
+            }));
+        }));
+
+        await ctx.service.unmarkDownloading(query.company_id);
     });
 
     ctx.body = {

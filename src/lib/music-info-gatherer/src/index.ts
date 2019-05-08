@@ -15,10 +15,7 @@ import moment from 'moment';
 import axios from 'axios';
 import Redis from 'ioredis';
 import AsyncLock from 'async-lock';
-
-global.info = info;
-global.warn = warn;
-global.error = error;
+import puppeteer from 'puppeteer';
 
 const proxyConfig = require('../../../../config/proxy.json');
 
@@ -76,7 +73,7 @@ export class Gatherer {
                     const response = await axios(url);
                     const proxy = `http://${response.data.domain}:${response.data.port}`;
 
-                    global.info({
+                    info({
                         module: 'music-info-gatherer',
                         desc: 'got domestic proxy',
                         proxy,
@@ -86,7 +83,7 @@ export class Gatherer {
         
                     return proxy;
                 } catch (e) {
-                    global.error({
+                    error({
                         module: 'music-info-gatherer',
                         desc: 'getting proxy error',
                         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
@@ -137,7 +134,7 @@ export class Gatherer {
 
                         cb();
                     }, (err, ret) => {
-                        err && global.error({
+                        err && error({
                             module: 'music-info-gatherer',
                             desc: 'getting proxy error',
                             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
@@ -151,7 +148,7 @@ export class Gatherer {
                     });
                 });
 
-                global.info({
+                info({
                     module: 'music-info-gatherer',
                     desc: 'got domestic proxy',
                     proxy: proxies[next],
@@ -175,7 +172,7 @@ export class Gatherer {
 
                 return await adapter.search(searchOptions);
             } catch (e) {
-                global.error({
+                error({
                     module: 'music-info-gatherer',
                     adapter: tag,
                     time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
@@ -214,6 +211,9 @@ export class Gatherer {
         return results;
     }
 
+    public async screenShot() {
+        ;
+    }
 }
 
 if (require.main === module) {
