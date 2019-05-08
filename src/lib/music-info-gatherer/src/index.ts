@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import * as emitter from 'events';
 
 import ItunesAdapter from './adapters/itunes';
 import KkboxAdapter from './adapters/kkbox';
@@ -50,6 +51,10 @@ export class Gatherer {
     private foreign: { [prop: string]: any } & { kkbox: boolean, spotify: boolean, youtube: boolean }
              = { kkbox: true, spotify: true, youtube: true };
 
+    private refreshLock = false;
+
+    private refreshPublisher = new emitter.EventEmitter();
+
     public domesticProxyPool: ProxyPool;
 
     public foreignProxyPool: ProxyPool;
@@ -57,6 +62,8 @@ export class Gatherer {
     public redis: Redis.Redis;
 
     constructor(options: GathererOptions) {
+        const gatherer = this;
+
         this.redis = new Redis({
             host: 'localhost',
             port: 6379,
@@ -68,10 +75,22 @@ export class Gatherer {
             timeout: 3 * 60,
             strategy: 'manual',
             async get() {
+                if (gatherer.refreshLock) {
+                    return await new Promise((resolve, reject) => {
+                        gatherer.refreshPublisher.on('refreshed', (result) => {
+                            resolve(result);
+                        });
+                    });
+                }
+
+                gatherer.refreshLock = true;
+
+                let proxy;
+
                 try {
                     const url = proxyConfig.domestics[0];
                     const response = await axios(url);
-                    const proxy = `http://${response.data.domain}:${response.data.port}`;
+                    proxy = `http://${response.data.domain}:${response.data.port}`;
 
                     info({
                         module: 'music-info-gatherer',
@@ -80,8 +99,6 @@ export class Gatherer {
                         url,
                         time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                     });
-        
-                    return proxy;
                 } catch (e) {
                     error({
                         module: 'music-info-gatherer',
@@ -92,13 +109,15 @@ export class Gatherer {
                             stack: e.stack,
                         },
                     });
-        
-                    return undefined;
                 }
+
+                gatherer.refreshPublisher.emit('refreshed', proxy);
+
+                gatherer.refreshLock = false;
+
+                return proxy;
             },
         });
-
-        const gather = this;
 
         this.foreignProxyPool = new ProxyPool({
             name: 'foreignProxyPool',
@@ -111,16 +130,16 @@ export class Gatherer {
 
                 const size = proxies.length;
 
-                let next = Number(await gather.redis.get('proxy#foreignProxyPool#next')) % size;
-                await gather.redis.setex('proxy#foreignProxyPool#next', 300, (next + 1) % size);
+                let next = Number(await gatherer.redis.get('proxy#foreignProxyPool#next')) % size;
+                await gatherer.redis.setex('proxy#foreignProxyPool#next', 300, (next + 1) % size);
 
                 await new Promise((resolve, reject) => {
-                    lock.acquire('', async (cb) => {
-                        let available = await gather.redis.get(`${availableKey}#${next}`);
+                    lock.acquire('foreign', async (cb) => {
+                        let available = await gatherer.redis.get(`${availableKey}#${next}`);
 
                         while (available !== null) {
                             next = (next + 1) % size;
-                            available = await gather.redis.get(`${availableKey}#${next}`);
+                            available = await gatherer.redis.get(`${availableKey}#${next}`);
 
                             await new Promise((resolve, reject) => {
                                 setTimeout(() => {
@@ -129,8 +148,8 @@ export class Gatherer {
                             });
                         }
 
-                        await gather.redis.set(`${availableKey}#${next}`, '');
-                        await gather.redis.pexpire(`${availableKey}#${next}`, interval);
+                        await gatherer.redis.set(`${availableKey}#${next}`, '');
+                        await gatherer.redis.pexpire(`${availableKey}#${next}`, interval);
 
                         cb();
                     }, (err, ret) => {
@@ -150,7 +169,7 @@ export class Gatherer {
 
                 info({
                     module: 'music-info-gatherer',
-                    desc: 'got domestic proxy',
+                    desc: 'got foreign proxy',
                     proxy: proxies[next],
                     time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 });
@@ -211,7 +230,7 @@ export class Gatherer {
         return results;
     }
 
-    public async screenShot() {
+    public async screenShot(url: string, path: string, channel: string) {
         ;
     }
 }

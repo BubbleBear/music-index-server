@@ -10,6 +10,8 @@ import bodyparser from 'koa-bodyparser';
 import serve from 'koa-static';
 import cors from '@koa/cors';
 
+process.setMaxListeners(20);
+
 global.info = info;
 global.warn = warn;
 global.error = error;

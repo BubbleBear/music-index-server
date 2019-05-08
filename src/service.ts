@@ -43,8 +43,6 @@ export default class Service {
             useNewUrlParser: true,
         });
 
-        process.setMaxListeners(20);
-
         this.redis = new Redis({
             host: 'localhost',
             port: 6379,

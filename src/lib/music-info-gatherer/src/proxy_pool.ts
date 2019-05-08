@@ -19,7 +19,7 @@ export default class ProxyPool {
     private strategy!: 'manual' | 'rotate';
 
     constructor(options: ProxyPoolOptions) {
-        this.destructOptions(options);
+        this.destructureOptions(options);
 
         this.redis = new Redis({
             host: 'localhost',
@@ -62,7 +62,7 @@ export default class ProxyPool {
         return '';
     }
 
-    private destructOptions(options: ProxyPoolOptions) {
+    private destructureOptions(options: ProxyPoolOptions) {
         ({
             name: this.name,
             get: this._get,
