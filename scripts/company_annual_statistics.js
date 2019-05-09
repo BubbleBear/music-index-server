@@ -54,9 +54,7 @@ if (require.main === module) {
 
             matrix.push(entry);
 
-            if (company.company_id > 1000) {
-                break;
-            }
+            console.log(company.company_id);
         }
 
         const years = [...yearSet].sort((a, b) => {
