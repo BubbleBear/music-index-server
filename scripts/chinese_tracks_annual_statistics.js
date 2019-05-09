@@ -20,6 +20,15 @@ async function getDB(useClient) {
     return db;
 }
 
+function isChinese(str) {
+    var patrn = /[\u4E00-\u9FA5]|[\uFE30-\uFFA0]/gi;
+    if (!patrn.exec(str)) {
+        return false;
+    } else {
+        return true;
+    }
+}
+
 if (require.main === module) {
     !async function() {
         await getDB();
@@ -30,13 +39,14 @@ if (require.main === module) {
 
         const yearSet = new Set;
 
+        const entry = {
+            '中文歌曲数量': '中文歌曲数量',
+        };
+
         while (await companyCursor.hasNext()) {
             const company = await companyCursor.next();
 
-            const entry = {
-                id: company.company_id,
-                name: company.name,
-            };
+            
 
             const albums = await db.collection('album').find({
                 album_id: {
@@ -49,17 +59,23 @@ if (require.main === module) {
 
                 yearSet.add(year);
 
-                entry[year] = entry[year] === undefined ? album.total : entry[year] + album.total;
+                entry[year] || (entry[year] = 0);
+
+                if (isChinese(album.singername) || isChinese(album.name)) {
+                    entry[year] += album.total;
+                } else {
+                    album.list.forEach((track) => {
+                        if (isChinese(track.songname)) {
+                            entry[year]++;
+                        }
+                    });
+                }
             });
 
-            matrix.push(entry);
-
-            // console.log(company.company_id);
-
-            if (company.company_id > 1000) {
-                break;
-            }
+            console.log(company.company_id);
         }
+
+        matrix.push(entry);
 
         const years = [...yearSet].sort((a, b) => {
             return Number(a) - Number(b);
@@ -68,11 +84,11 @@ if (require.main === module) {
         const head = years.reduce((acc, cur) => {
             acc.set(cur, cur);
             return acc;
-        }, new Map( [['company_id', 'id'], ['name', '唱片公司']] ));
+        }, new Map( [['中文歌曲数量', '发行年份']] ));
 
         const csv = list2csv(matrix, head).replace(/"undefined"/g, '0');
 
-        const ws = fs.createWriteStream('x.csv');
+        const ws = fs.createWriteStream('chinese_tracks_annual_statistics.csv');
         ws.write(csv);
         ws.end();
 
