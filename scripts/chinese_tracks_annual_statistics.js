@@ -64,7 +64,7 @@ if (require.main === module) {
                 if (isChinese(album.singername) || isChinese(album.name)) {
                     entry[year] += album.total;
                 } else {
-                    album.list.forEach((track) => {
+                    album.list && album.list.forEach((track) => {
                         if (isChinese(track.songname)) {
                             entry[year]++;
                         }
