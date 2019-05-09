@@ -242,6 +242,12 @@ router.get('/get_tracks', async (ctx, next) => {
 
     await ctx.service.markDownloading(query.company_id);
 
+    const company = await ctx.service.findCompanies(companyIds);
+
+    if (company.length === 0) {
+        await ctx.service.updateCompany(query.company_id);
+    }
+
     const embeded = await ctx.service.findEmbededAlbums(companyIds);
 
     const tracks = embeded.reduce((tacc, company) => {

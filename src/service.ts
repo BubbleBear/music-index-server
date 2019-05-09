@@ -25,6 +25,8 @@ const REDIS_DOWNLOADING_STATUS_SET = 'downloading.file';
 
 const REDIS_CACHED_FILE_MAP = 'cached.file';
 
+const deprecated: boolean = true;
+
 export default class Service {
     client!: MongoClient;
 
@@ -59,6 +61,35 @@ export default class Service {
 
         this.client = await this._client;
         this.db = this.client.db('qq_music_crawler');
+    }
+
+    async updateCompany(companyId: number) {
+        await this.sync();
+
+        const retryCount = 5;
+        let retry = retryCount;
+
+        while (retry--) {
+            try {
+                const crawler = require('../scripts/qq_music_crawler');
+                await crawler.getDB(this.client);
+                await crawler.getCompany(companyId);
+
+                break;
+            } catch (err) {
+                global.error({
+                    module: 'scripts/qq_music_crawler',
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    desc: 'company error',
+                    companyId: companyId,
+                    error: {
+                        message: err.message,
+                        stack: err.stack,
+                    },
+                    errorCount: retryCount - retry,
+                });
+            }
+        }
     }
 
     async findCompanies(companyIds: number[], projection: any = { _id: 0 }) {
@@ -266,7 +297,9 @@ export default class Service {
         }) {
         await this.sync();
 
-        // const cachedTrack = await this.findCachedTracks(songName, artistName);
+        if (deprecated === false) {
+            const cachedTrack = await this.findCachedTracks(songName, artistName);
+        }
 
         const results = await this.gatherer.search(songName, artistName);
 
@@ -291,15 +324,17 @@ export default class Service {
             return acc;
         }, {} as { [prop in keyof adapters]?: SearchReturn | null });
 
-        // await Promise.all(
-        //     (Object.keys(bestMatches) as Array<keyof adapters>)
-        //         .map(async (k) => {
-        //             if (bestMatches[k]) {
-        //                 await this.cacheTrack(songName, artistName, k, bestMatches[k]!);
-        //             }
-        //         }
-        //     )
-        // );
+        if (deprecated === false) {
+            await Promise.all(
+                (Object.keys(bestMatches) as Array<keyof adapters>)
+                    .map(async (k) => {
+                        if (bestMatches[k]) {
+                            await this.cacheTrack(songName, artistName, k, bestMatches[k]!);
+                        }
+                    }
+                )
+            );
+        }
 
         console.log(songName, '#########', artistName, '#########', albumName);
 
@@ -450,10 +485,15 @@ export default class Service {
 if (require.main === module) {
     !async function() {
         const service = new Service();
+        await service.sync();
 
-        await service.screenShot('https://www.google.com', '1.png');
+        // await service.updateCompany(120000);
+
+        const x = await service.findEmbededAlbums([120002]);
+
+        console.log(x);
 
         await service.client.close();
-        service.redis.disconnect();
+        await service.redis.disconnect();
     }();
 }

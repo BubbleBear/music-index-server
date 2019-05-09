@@ -53,7 +53,7 @@ export class Gatherer {
 
     private refreshLock = false;
 
-    private refreshPublisher = new emitter.EventEmitter();
+    private refreshPublisher = new emitter.EventEmitter().setMaxListeners(30);
 
     public domesticProxyPool: ProxyPool;
 

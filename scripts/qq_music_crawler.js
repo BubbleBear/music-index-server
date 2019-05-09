@@ -27,9 +27,9 @@ let client;
 
 let db;
 
-async function getDB() {
+async function getDB(useClient) {
     if (!db) {
-        client = await mongo.connect('mongodb://localhost', {
+        client = useClient || await mongo.connect('mongodb://localhost', {
             keepAlive: 5 * 60 * 1000,
             useNewUrlParser: true,
         });
@@ -204,7 +204,6 @@ async function getCompany(companyId) {
 
     const albumList = Object.keys(albumMap).map(v => albumMap[v]);
 
-    // console.log(albumList)
     await bulkUpsertAlbum(albumList);
 
     const previous = await db.collection(MONGO_COMPANY_COLLECTION)
@@ -233,6 +232,8 @@ async function getCompany(companyId) {
             upsert: true,
         },
     );
+
+    return albumList;
 }
 
 async function getCompanyAlbumList({ page, pageSize, companyId, sort }) {
@@ -409,4 +410,6 @@ if (require.main === module) {
 module.exports = {
     run,
     inspect,
+    getCompany,
+    getDB,
 };
