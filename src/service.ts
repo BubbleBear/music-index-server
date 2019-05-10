@@ -514,6 +514,8 @@ export default class Service {
 
     public async screenshot(url: string, path: string, channel: string) {
         await this.gatherer.screenshot(url, path, channel);
+
+        console.log('screenshot: ', url, '#########', path, '#########', channel);
     }
 }
 

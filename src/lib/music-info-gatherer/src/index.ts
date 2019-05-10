@@ -45,11 +45,11 @@ export interface GathererOptions {
 }
 
 export class Gatherer {
-    private domestics: { [prop: string]: any } & { itunes: boolean, netease: boolean, qq: boolean }
-            = { itunes: true, netease: true, qq: true };
+    private domestics: { [prop: string]: any } & { netease: boolean, qq: boolean }
+            = { netease: true, qq: true };
 
-    private foreign: { [prop: string]: any } & { kkbox: boolean, spotify: boolean, youtube: boolean }
-             = { kkbox: true, spotify: true, youtube: true };
+    private foreign: { [prop: string]: any } & { itunes: boolean, kkbox: boolean, spotify: boolean, youtube: boolean }
+             = { itunes: true, kkbox: true, spotify: true, youtube: true };
 
     private refreshLock = false;
 
