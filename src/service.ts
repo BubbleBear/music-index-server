@@ -11,6 +11,7 @@ import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
 import moment from 'moment';
 import plimit from 'p-limit';
+import archiver from 'archiver';
 
 const searchLimit = plimit(10);
 
@@ -281,6 +282,7 @@ export default class Service {
 
                     return {
                         name: option.songName,
+                        artist: option.artistName,
                         data: status ? await this.searchTrack(option) : {},
                     };
                 });
@@ -422,9 +424,6 @@ export default class Service {
         return collection;
     }
 
-    public async screenShot(url: string, filepath: string) {
-    }
-
     public async getDownloadingStatus(redisKey: string) {
         const downloading = await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, redisKey);
 
@@ -439,17 +438,47 @@ export default class Service {
         await this.redis.srem(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
-    public async cacheFile(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+    public async cacheCSV(content: string, filepath: string, redisKey: string, expire: number = 76800) {
         const ws = fs.createWriteStream(filepath);
         ws.write('\ufeff');
         ws.write(content);
         ws.end();
-
-        await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
 
     public async listDownloadingFiles() {
         return await this.redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
+    }
+
+    public async cacheFile(redisKey: string, filepath: string) {
+        const archivePath = path.join(filepath, '../', `${redisKey}.zip`);
+
+        const ws = fs.createWriteStream(archivePath);
+
+        const archive = archiver('zip').on('error', (e) => {
+            global.error({
+                module: 'main',
+                method: 'getTracks#archiving',
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                error: {
+                    message: e.message,
+                    stack: e.stack,
+                },
+            });
+        });
+
+        archive.pipe(ws);
+
+        archive.directory(filepath, false);
+
+        archive.finalize();
+
+        await new Promise((resolve, reject) => {
+            ws.on('close', () => {
+                resolve();
+            });
+        });
+
+        return await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, archivePath);
     }
 
     public async listCachedFiles() {
@@ -460,7 +489,6 @@ export default class Service {
         try {
             const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
             filepath && await util.promisify(fs.unlink)(filepath);
-            await this.redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
         } catch (e) {
             global.error({
                 module: 'main',
@@ -472,6 +500,8 @@ export default class Service {
                 },
             });
         }
+
+        await this.redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
     }
 
     public async openFileStream(redisKey: string) {
@@ -480,14 +510,15 @@ export default class Service {
         return fs.createReadStream(filepath!);
     }
 
+    public async screenshot(url: string, path: string, channel: string) {
+        await this.gatherer.screenshot(url, path, channel);
+    }
 }
 
 if (require.main === module) {
     !async function() {
         const service = new Service();
         await service.sync();
-
-        // await service.updateCompany(120000);
 
         const x = await service.findEmbededAlbums([120002]);
 

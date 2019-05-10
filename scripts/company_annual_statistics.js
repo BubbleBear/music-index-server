@@ -1,6 +1,6 @@
 const fs = require('fs');
 
-const list2csv = require('./utils').list2csv;
+const list2csv = require('list2csv');
 
 const mongo = require('mongodb');
 

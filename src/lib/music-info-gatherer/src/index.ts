@@ -11,12 +11,12 @@ import YoutubeAdapter from './adapters/youtube';
 import { Adapter, SearchOptions, SearchReturn } from './adapters/abstract';
 import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
+import BrowserPool from './browser_pool';
 
 import moment from 'moment';
 import axios from 'axios';
 import Redis from 'ioredis';
 import AsyncLock from 'async-lock';
-import puppeteer from 'puppeteer';
 
 const proxyConfig = require('../../../../config/proxy.json');
 
@@ -55,6 +55,10 @@ export class Gatherer {
 
     private refreshPublisher = new emitter.EventEmitter().setMaxListeners(30);
 
+    public domesticBrowserPool: BrowserPool;
+
+    public foreignBrowserPool: BrowserPool;
+
     public domesticProxyPool: ProxyPool;
 
     public foreignProxyPool: ProxyPool;
@@ -90,7 +94,9 @@ export class Gatherer {
                 try {
                     const url = proxyConfig.domestics[0];
                     const response = await axios(url);
-                    proxy = `http://${response.data.domain}:${response.data.port}`;
+                    proxy = response.data.domain && response.data.port
+                        ? `http://${response.data.domain}:${response.data.port}`
+                        : undefined;
 
                     info({
                         module: 'music-info-gatherer',
@@ -177,6 +183,12 @@ export class Gatherer {
                 return proxies[next];
             },
         });
+
+        this.domesticBrowserPool = new BrowserPool();
+
+        this.foreignBrowserPool = new BrowserPool({
+            proxies: proxyConfig.foreign,
+        });
     }
 
     public async retry(tag: keyof typeof Adapters, searchOptions: SearchOptions, initProxy?: string, times: number = 3) {
@@ -193,6 +205,7 @@ export class Gatherer {
             } catch (e) {
                 error({
                     module: 'music-info-gatherer',
+                    function: 'retry',
                     adapter: tag,
                     time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                     error: {
@@ -230,8 +243,41 @@ export class Gatherer {
         return results;
     }
 
-    public async screenShot(url: string, path: string, channel: string) {
-        ;
+    public async screenshot(url: string, path: string, channel: string) {
+        let page;
+
+        let retry = 3;
+
+        while (retry--) {
+            try {
+                if (this.domestics[channel]) {
+                    page = await this.domesticBrowserPool.random.newPage();
+                } else {
+                    page = await this.foreignBrowserPool.random.newPage();
+                }
+
+                await page.goto(url);
+
+                break;
+            } catch (e) {
+                error({
+                    module: 'music-info-gatherer',
+                    function: 'screenshot',
+                    url,
+                    path,
+                    channel,
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    error: {
+                        message: e.message,
+                        stack: e.stack,
+                    },
+                });
+            }
+        }
+
+        page && (await page.screenshot({
+            path,
+        }));
     }
 }
 
@@ -242,13 +288,17 @@ if (require.main === module) {
             },
         });
 
-        const r = await gatherer.search('东西', '林俊呈');
-        const ws = fs.createWriteStream(path.join(__dirname, '../../../../x.json')); 
-        ws.write(JSON.stringify(r));
-        ws.end();
+        // const r = await gatherer.search('好心分手', '卢巧音');
+        // const ws = fs.createWriteStream(path.join(__dirname, '../../../../x.json')); 
+        // ws.write(JSON.stringify(r));
+        // ws.end();
+
+        await gatherer.screenshot('https://open.spotify.com/track/5QEvnCNqeDyGlWtByBBjyp', './y.png', 'spotify');
 
         await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();
         await gatherer.foreignProxyPool.destroy();
+        await gatherer.domesticBrowserPool.destroy();
+        await gatherer.foreignBrowserPool.destroy();
     }()
 }

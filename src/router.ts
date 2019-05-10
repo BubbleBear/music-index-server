@@ -278,75 +278,82 @@ router.get('/get_tracks', async (ctx, next) => {
             return;
         }
 
-        if (!result || !Array.isArray(result) || result.length === 0) {
-            const csv = '公司不存在或公司没有歌曲';
-            await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id + '.csv'), query.company_id);
+        const folder = path.join(__dirname, '../runtime', query.company_id);
 
-            return;
-        }
-
-        const tunnels = Object.keys(result[0].data);
-
-        const orderedHeaderMap = tunnels.reduce((acc, cur) => {
-            acc.set(cur, cur);
-            return acc;
-        }, new Map([[' ', ' ']]));
-
-        const map = result.reduce((acc, cur) => {
-            const d = cur.data;
-            (Object.keys(d) as Array<keyof typeof d>).forEach(k => {
-                if (acc[cur.name] == undefined) {
-                    acc[cur.name] = {};
-                }
-
-                if (d[k]) {
-                    if (d[k]!.name) {
-                        switch (k as string) {
-                            case 'itunes': acc[cur.name][k] = '存在'; break;
-                            case 'qq': acc[cur.name][k] = d[k]!.comments; break;
-                            case 'netease': acc[cur.name][k] = d[k]!.comments; break;
-                            case 'kkbox': acc[cur.name][k] = '存在'; break;
-                            case 'spotify': acc[cur.name][k] = '存在'; break;
-                            case 'youtube': acc[cur.name][k] = d[k]!.views; break;
-                        }
-                    }
-                } else {
-                    acc[cur.name][k] = '查询失败';
-                }
-            });
-
-            return acc;
-        }, {} as any);
-
-        const list = Object.keys(map).reduce((acc, cur) => {
-            const entry = map[cur];
-            entry[' '] = cur;
-            acc.push(entry);
-
-            return acc;
-        }, [] as any[]);
-
-        const csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
-
-        await util.promisify(fs.mkdir)(path.join(__dirname, '../runtime', query.company_id), {
+        await util.promisify(fs.mkdir)(folder, {
             recursive: true,
         });
 
-        await ctx.service.cacheFile(csv, path.join(__dirname, '../runtime', query.company_id, 'collection.csv'), query.company_id);
+        let csv;
 
-        await Promise.all(result.map(async r => {
-            const d = r.data;
-            await Promise.all((Object.keys(d) as Array<keyof typeof d>).map(async k => {
-                if (d[k] && d[k]!.url) {
-                    const url = d[k]!.url!;
-                    const filename = path.join(__dirname, '../runtime', query.company_id, `${r.name}_${k}.png`);
+        if (!result || !Array.isArray(result) || result.length === 0) {
+            csv = '公司不存在或公司没有歌曲';
+        } else {
+            const tunnels = Object.keys(result[0].data);
 
-                    await ctx.service.screenShot(url, filename);
-                }
+            const orderedHeaderMap = tunnels.reduce((acc, cur) => {
+                acc.set(cur, cur);
+                return acc;
+            }, new Map([['歌曲', '歌曲'], ['歌手', '歌手']]));
+
+            const map = result.reduce((acc, cur) => {
+                const d = cur.data;
+                (Object.keys(d) as Array<keyof typeof d>).forEach(k => {
+                    if (acc[cur.name] == undefined) {
+                        acc[cur.name] = {};
+                    }
+
+                    acc[cur.name]['歌手'] = cur.artist;
+
+                    if (d[k]) {
+                        if (d[k]!.name) {
+                            switch (k as string) {
+                                case 'itunes': acc[cur.name][k] = '存在'; break;
+                                case 'qq': acc[cur.name][k] = d[k]!.comments; break;
+                                case 'netease': acc[cur.name][k] = d[k]!.comments; break;
+                                case 'kkbox': acc[cur.name][k] = '存在'; break;
+                                case 'spotify': acc[cur.name][k] = '存在'; break;
+                                case 'youtube': acc[cur.name][k] = d[k]!.views; break;
+                            }
+                        }
+                    } else {
+                        acc[cur.name][k] = '查询失败';
+                    }
+                });
+
+                return acc;
+            }, {} as any);
+
+            const list = Object.keys(map).reduce((acc, cur) => {
+                const entry = map[cur];
+                entry['歌曲'] = cur;
+                acc.push(entry);
+
+                return acc;
+            }, [] as any[]);
+
+            csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
+
+            await Promise.all(result.map(async r => {
+                const d = r.data;
+                await Promise.all((Object.keys(d) as Array<keyof typeof d>).map(async k => {
+                    if (d[k] && d[k]!.url) {
+                        const url = d[k]!.url!;
+                        const filename = path.join(folder, `${r.name}_${k}.png`);
+    
+                        await ctx.service.screenshot(url, filename, k);
+                    }
+                }));
             }));
-        }));
+        }
+
+        await ctx.service.cacheCSV(csv, path.join(folder, 'collection.csv'), query.company_id);
+
+        await ctx.service.cacheFile(query.company_id, folder);
 
         await ctx.service.unmarkDownloading(query.company_id);
+
+        await util.promisify(fs.unlink)(folder);
     });
 
     ctx.body = {
@@ -405,7 +412,7 @@ router.get('/download', async (ctx, next) => {
 
     ctx.set({
         'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}.csv`,
+        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}.zip`,
     });
 
     ctx.body = rs;
