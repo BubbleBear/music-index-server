@@ -1,7 +1,6 @@
 import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
-import * as util from 'util';
 
 import { Gatherer, adapters } from './lib/music-info-gatherer/src';
 import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
@@ -12,6 +11,7 @@ import Redis from 'ioredis';
 import moment from 'moment';
 import plimit from 'p-limit';
 import archiver from 'archiver';
+import del from 'del';
 
 const searchLimit = plimit(10);
 
@@ -478,7 +478,9 @@ export default class Service {
             });
         });
 
-        return await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, archivePath);
+        await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, archivePath);
+
+        await del(filepath);
     }
 
     public async listCachedFiles() {
@@ -488,7 +490,7 @@ export default class Service {
     public async deleteCachedFile(redisKey: string) {
         try {
             const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
-            filepath && await util.promisify(fs.unlink)(filepath);
+            filepath && await del(filepath);
         } catch (e) {
             global.error({
                 module: 'main',

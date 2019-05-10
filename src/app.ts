@@ -22,7 +22,7 @@ try {
 
 const app = new Koa();
 
-app.context.service = new Service;
+app.context.service = new Service();
 
 app
     .use(cors())

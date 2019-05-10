@@ -352,8 +352,6 @@ router.get('/get_tracks', async (ctx, next) => {
         await ctx.service.cacheFile(query.company_id, folder);
 
         await ctx.service.unmarkDownloading(query.company_id);
-
-        await util.promisify(fs.unlink)(folder);
     });
 
     ctx.body = {
