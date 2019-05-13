@@ -68,6 +68,11 @@ export class Config extends emitter.EventEmitter {
         this.emit('ready');
     }
 
+    async disconnect() {
+        this.redis.disconnect();
+        this.subscriber.disconnect();
+    }
+
     async erase() {
         await this._init;
 

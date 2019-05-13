@@ -34,17 +34,15 @@ export default class Service {
 
     redis: Redis.Redis;
 
+    config: Config;
+
     private _client: Promise<MongoClient>;
 
     private db!: Db;
 
     private gatherer: Gatherer;
 
-    private config: Config;
-
     constructor() {
-        const proxyConfig = require('../config/proxy.json');
-
         this._client = mongo.connect('mongodb://localhost:27017', {
             useNewUrlParser: true,
         });
@@ -245,11 +243,11 @@ export default class Service {
     
         crawler.stdout.on('data', (chunk) => {
             chunk && console.log(chunk.toString());
-        })
+        });
     
         crawler.stderr.on('data', (chunk) => {
             chunk && console.log(chunk.toString());
-        })
+        });
     
         crawler.on('close', async (code) => {
             if (code == 0) {
@@ -523,8 +521,36 @@ export default class Service {
         console.log('screenshot: ', url, '#########', path, '#########', channel);
     }
 
-    public async restartSSClients() {
-        ;
+    public async restartSSClients(attachTo: any) {
+        console.log(attachTo.SSClients);
+
+        if (attachTo.SSClients) {
+            (attachTo as cp.ChildProcess).kill('SIGTERM');
+
+            await new Promise((resolve) => {
+                attachTo.SSClients.on('close', () => {
+                    console.log('termed')
+                    resolve();
+                });
+            });
+        }
+
+        const ssp = cp.spawn(
+            'node',
+            [ `${path.join(__dirname, '../scripts/start_ss_clients.js')}` ],
+        );
+    
+        ssp.stdout.on('data', (chunk) => {
+            chunk && console.log(chunk.toString());
+        });
+    
+        ssp.stderr.on('data', (chunk) => {
+            chunk && console.log(chunk.toString());
+        });
+
+        attachTo.SSClients = ssp;
+
+        return;
     }
 }
 
@@ -533,11 +559,20 @@ if (require.main === module) {
         const service = new Service();
         await service.sync();
 
-        const x = await service.findEmbededAlbums([120002]);
+        const a: any = {};
+
+        const x = await service.restartSSClients(a);
+
+        await new Promise((resolve) => {
+            setTimeout(async () => {
+                await service.restartSSClients(a);
+            }, 10000);
+        });
 
         console.log(x);
 
         await service.client.close();
         await service.redis.disconnect();
+        await service.config.disconnect();
     }();
 }
