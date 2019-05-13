@@ -7,29 +7,55 @@ const clientProsessPool = [];
 
 async function start(startPort = 7777) {
     const serverList = config.configs;
+    let port = startPort;
 
     // console.log(serverList)
 
-    // todo: increase port on start-up failure
-    const commands = serverList.filter(v => v.enable).map(v => {
-        return `ss-local -p ${v.server_port} -k ${v.password} -m ${v.method} -s ${v.server} -l ${startPort++}`;
-    });
+    for (const server of serverList) {
+        let retry = 3;
 
-    await Promise.all(commands.map(async v => {
-        try {
-            const process = await util.promisify(cp.exec)(v);
-            clientProsessPool.push(process);
-        } catch (e) {
-            console.log(e)
+        while (retry--) {
+            try {
+                const command = getCommand(server, port++);
+                const process = cp.spawn('ss-local', command.split(' '));
+
+                process.stdout.on('data', (chunk) => {
+                    chunk && console.log(chunk.toString());
+                })
+            
+                process.stderr.on('data', (chunk) => {
+                    chunk && console.log(chunk.toString());
+                })
+
+                clientProsessPool.push(process);
+            } catch (e) {
+                console.log(e)
+            }
         }
+    }
+
+    await Promise.all(clientProsessPool.map(process => {
+        return new Promise((resolve, reject) => {
+            process.on('close', (code, signal) => {
+                console.log(code, signal)
+                resolve();
+            });
+        });
     }));
 }
 
-process.on('beforeExit', async () => {
-    console.log('beforeExit');
+function getCommand(args, port) {
+    return `-p ${args.server_port} -k ${args.password} -m ${args.method} -s ${args.server} -l ${port}`;
+}
+
+function stop() {
     clientProsessPool.forEach(v => {
         v.kill('SIGKILL');
     })
+}
+
+process.on('beforeExit', async () => {
+    stop();
 });
 
 if (require.main === module) {

@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import { Gatherer, adapters } from './lib/music-info-gatherer/src';
 import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
 import { normalizeString } from './utils';
+import { Config } from './config';
 
 import mongo, { MongoClient, Db } from "mongodb";
 import Redis from 'ioredis';
@@ -39,6 +40,8 @@ export default class Service {
 
     private gatherer: Gatherer;
 
+    private config: Config;
+
     constructor() {
         const proxyConfig = require('../config/proxy.json');
 
@@ -53,6 +56,8 @@ export default class Service {
         });
 
         this.gatherer = new Gatherer({ proxies: {}});
+
+        this.config = new Config();
     }
 
     async sync() {
@@ -516,6 +521,10 @@ export default class Service {
         await this.gatherer.screenshot(url, path, channel);
 
         console.log('screenshot: ', url, '#########', path, '#########', channel);
+    }
+
+    public async restartSSClients() {
+        ;
     }
 }
 
