@@ -18,6 +18,7 @@ export default class BrowserPool {
                 args: [
                     proxy.length ? `--proxy-server=${proxy}` : '',
                 ],
+                pipe: true,
             });
         });
     }

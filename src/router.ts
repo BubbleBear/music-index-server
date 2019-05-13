@@ -228,6 +228,8 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const companyIds = [ query.company_id ];
 
+    const screenshot = !!query.screenshot;
+
     const downloading = await ctx.service.getDownloadingStatus(query.company_id);
 
     if (downloading) {
@@ -334,17 +336,44 @@ router.get('/get_tracks', async (ctx, next) => {
 
             csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
 
-            await Promise.all(result.map(async r => {
-                const d = r.data;
-                await Promise.all((Object.keys(d) as Array<keyof typeof d>).map(async k => {
-                    if (d[k] && d[k]!.url) {
-                        const url = d[k]!.url!;
-                        const filename = path.join(folder, `${r.name}_${k}.png`);
-    
-                        await ctx.service.screenshot(url, filename, k);
-                    }
+            if (screenshot) {
+                await Promise.all(result.map(async r => {
+                    const d = r.data;
+                    await Promise.all((Object.keys(d) as Array<keyof typeof d>).map(async k => {
+                        if (d[k] && d[k]!.url) {
+                            const url = d[k]!.url!;
+                            const filename = path.join(folder, `${r.name}_${k}.png`);
+        
+                            await ctx.service.screenshot(url, filename, k);
+                        }
+                    }));
                 }));
-            }));
+
+                const batchScreenshotOptions = result.reduce((acc, cur) => {
+                    const d = cur.data;
+                    
+                    const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
+                        if (d[k] && d[k]!.url) {
+                            const url = d[k]!.url!;
+                            const filename = path.join(folder, `${cur.name}_${k}.png`);
+        
+                            return {
+                                url,
+                                path: filename,
+                                channel: k,
+                            };
+                        }
+                    }).filter(v => v);
+
+                    acc = acc.concat(part as any);
+
+                    return acc;
+                }, [] as { url: string, path: string, channel: keyof typeof result[0]['data'] }[]);
+
+                console.log('**************starting batch screenshot*****************');
+
+                await ctx.service.batchScreenshot(batchScreenshotOptions);
+            }
         }
 
         await ctx.service.cacheCSV(csv, path.join(folder, 'collection.csv'), query.company_id);

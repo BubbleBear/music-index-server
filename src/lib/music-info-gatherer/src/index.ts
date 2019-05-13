@@ -195,6 +195,8 @@ export class Gatherer {
         let proxy = initProxy || (this.domestics[tag] ? await this.domesticProxyPool.get() : 
             this.foreign[tag] ? await this.foreignProxyPool.get() : undefined);
 
+        const errors = [];
+
         while (times--) {
             try {
                 const adapter = new Adapters[tag]({
@@ -203,7 +205,9 @@ export class Gatherer {
 
                 return await adapter.search(searchOptions);
             } catch (e) {
-                error({
+                errors.push(e);
+
+                warn({
                     module: 'music-info-gatherer',
                     function: 'retry',
                     adapter: tag,
@@ -217,6 +221,16 @@ export class Gatherer {
                 this.domestics[tag] && (proxy = await this.domesticProxyPool.get(true));
                 this.foreign[tag] && (proxy = await this.foreignProxyPool.get());
             }
+        }
+
+        if (times === 0) {
+            error({
+                module: 'music-info-gatherer',
+                function: 'retry',
+                adapter: tag,
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                errors,
+            });
         }
     
         return null;
@@ -248,6 +262,8 @@ export class Gatherer {
 
         let retry = 3;
 
+        const errors = [];
+
         while (retry--) {
             try {
                 if (this.domestics[channel]) {
@@ -256,11 +272,16 @@ export class Gatherer {
                     page = await this.foreignBrowserPool.random.newPage();
                 }
 
-                await page.goto(url);
+                await (page.goto as any)(url, {
+                    timeout: 60000,
+                    waitUntil: 'networkidle2',
+                });
 
                 break;
             } catch (e) {
-                error({
+                errors.push(e);
+
+                warn({
                     module: 'music-info-gatherer',
                     function: 'screenshot',
                     url,
@@ -275,9 +296,40 @@ export class Gatherer {
             }
         }
 
-        page && (await page.screenshot({
-            path,
-        }));
+        if (retry === 0) {
+            error({
+                module: 'music-info-gatherer',
+                function: 'screenshot',
+                url,
+                path,
+                channel,
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                errors,
+            });
+        }
+
+        if (page) {
+            try {
+                await page.screenshot({
+                    path,
+                });
+
+                await page.close();
+            } catch (e) {
+                error({
+                    module: 'music-info-gatherer',
+                    function: 'screenshot#close',
+                    url,
+                    path,
+                    channel,
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    error: {
+                        message: e.message,
+                        stack: e.stack,
+                    },
+                });
+            }
+        }
     }
 }
 

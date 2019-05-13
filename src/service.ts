@@ -15,6 +15,7 @@ import archiver from 'archiver';
 import del from 'del';
 
 const searchLimit = plimit(10);
+const screenshotLimit = plimit(10);
 
 // this is also referred in crawler script
 const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
@@ -519,6 +520,17 @@ export default class Service {
         await this.gatherer.screenshot(url, path, channel);
 
         console.log('screenshot: ', url, '#########', path, '#########', channel);
+    }
+
+    public async batchScreenshot(options: {
+        url: string, path: string, channel: string
+    }[]) {
+        await Promise.all(options.map((option) => {
+            return screenshotLimit(async () => {
+                console.log('prepareing to screenshot');
+                return await this.screenshot(option.url, option.path, option.channel);
+            });
+        }));
     }
 
     public async restartSSClients(attachTo: any) {

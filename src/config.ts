@@ -124,14 +124,8 @@ if (require.main === module) {
     !async function() {
         const config = await new Config();
 
-        // console.log(await config.get('ssclient'));
-
-        const redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
+        config.set('ssclient', {
+            configs: [],
         });
-
-        await redis.publish(REDIS_CONFIG_KEY, 'asdf');
     }()
 }
