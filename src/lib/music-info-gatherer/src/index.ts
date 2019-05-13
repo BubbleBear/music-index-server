@@ -274,7 +274,11 @@ export class Gatherer {
 
                 await (page.goto as any)(url, {
                     timeout: 60000,
-                    waitUntil: 'networkidle2',
+                    waitUntil: 'load',
+                });
+
+                await page.screenshot({
+                    path,
                 });
 
                 break;
@@ -310,10 +314,6 @@ export class Gatherer {
 
         if (page) {
             try {
-                await page.screenshot({
-                    path,
-                });
-
                 await page.close();
             } catch (e) {
                 error({
