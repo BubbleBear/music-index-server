@@ -36,7 +36,7 @@ export type adapters = typeof Adapters;
 const domesticBrowserPool = new BrowserPool({}, false);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign.slice,
+    proxies: proxyConfig.foreign,
 });
 
 export class Gatherer {
@@ -269,6 +269,8 @@ export class Gatherer {
                 });
 
                 console.log('loaded: ', url, '*********', path, '*********', channel);
+
+                await page.bringToFront();
 
                 await page.screenshot({
                     path,
