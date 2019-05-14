@@ -2,6 +2,11 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as emitter from 'events';
 
+import moment from 'moment';
+import axios from 'axios';
+import Redis from 'ioredis';
+import AsyncLock from 'async-lock';
+
 import ItunesAdapter from './adapters/itunes';
 import KkboxAdapter from './adapters/kkbox';
 import NeteaseMusicAdapter from './adapters/netease_music';
@@ -12,11 +17,6 @@ import { Adapter, SearchOptions, SearchReturn } from './adapters/abstract';
 import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 import BrowserPool from './browser_pool';
-
-import moment from 'moment';
-import axios from 'axios';
-import Redis from 'ioredis';
-import AsyncLock from 'async-lock';
 
 const proxyConfig = require('../../../../config/proxy.json');
 
@@ -36,7 +36,7 @@ export type adapters = typeof Adapters;
 const domesticBrowserPool = new BrowserPool();
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign,
+    proxies: proxyConfig.foreign.slice(0, 3),
 });
 
 export class Gatherer {
@@ -252,8 +252,10 @@ export class Gatherer {
         while (retry--) {
             try {
                 if (this.domestics[channel]) {
+                    await domesticBrowserPool.sync();
                     page = await domesticBrowserPool.random.newPage();
                 } else {
+                    await foreignBrowserPool.sync();
                     page = await foreignBrowserPool.random.newPage();
                 }
 

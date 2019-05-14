@@ -1,5 +1,4 @@
 import puppeteer from 'puppeteer';
-import lazyAwait, { LazyPromise } from 'lazy-await';
 
 process.setMaxListeners(20);
 
@@ -8,19 +7,26 @@ export interface BrowserPoolOptions {
 }
 
 export default class BrowserPool {
-    private browsers: LazyPromise<puppeteer.Browser>[];
+    private _browsers: Promise<puppeteer.Browser>[];
+
+    private browsers!: puppeteer.Browser[];
 
     constructor(options?: BrowserPoolOptions) {
         const proxies = options && options.proxies || [ '' ];
 
-        this.browsers = proxies.map(proxy => {
-            return lazyAwait(puppeteer).launch({
+        this._browsers = proxies.map(proxy => {
+            return puppeteer.launch({
                 args: [
                     proxy.length ? `--proxy-server=${proxy}` : '',
                 ],
-                pipe: true,
+                ignoreHTTPSErrors: true,
+                headless: false,
             });
         });
+    }
+
+    async sync() {
+        this.browsers = await Promise.all(this._browsers);
     }
 
     get all() {
@@ -43,6 +49,8 @@ export default class BrowserPool {
 if (require.main === module) {
     !async function() {
         const bp = new BrowserPool();
+
+        await bp.sync();
 
         const b = bp.random;
 

@@ -370,8 +370,6 @@ router.get('/get_tracks', async (ctx, next) => {
                     return acc;
                 }, [] as { url: string, path: string, channel: keyof typeof result[0]['data'] }[]);
 
-                console.log('**************starting batch screenshot*****************');
-
                 await ctx.service.batchScreenshot(batchScreenshotOptions);
             }
         }

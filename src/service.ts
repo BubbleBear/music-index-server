@@ -2,20 +2,21 @@ import * as cp from 'child_process';
 import * as path from 'path';
 import * as fs from 'fs';
 
+import moment from 'moment';
+import archiver from 'archiver';
+import del from 'del';
+
 import { Gatherer, adapters } from './lib/music-info-gatherer/src';
 import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
 import { normalizeString } from './utils';
 import { Config } from './config';
 import redis from './connection/redis';
 import mongo from './connection/mongo';
+import limitWrapper from './dist-con-limit';
 
-import moment from 'moment';
-import plimit from 'p-limit';
-import archiver from 'archiver';
-import del from 'del';
+const searchLimit = limitWrapper(10, 'search');
 
-const searchLimit = plimit(10);
-const screenshotLimit = plimit(10);
+const screenshotLimit = limitWrapper(10, 'screenshot');
 
 // this is also referred in crawler script
 const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
@@ -37,9 +38,10 @@ export default class Service {
 
     private db!: ReturnType<ThenInfer<typeof mongo>['db']>;
 
-    private get gatherer() {
-        return new Gatherer();
-    }
+    // private get gatherer() {
+    //     return new Gatherer();
+    // }
+    private gatherer = new Gatherer();
 
     constructor() {
         this.config = new Config();
@@ -513,7 +515,7 @@ export default class Service {
     }[]) {
         await Promise.all(options.map((option) => {
             return screenshotLimit(async () => {
-                console.log('prepareing to screenshot');
+                console.log('############### before screenshot: ', option.url);
                 return await this.screenshot(option.url, option.path, option.channel);
             });
         }));
