@@ -3,7 +3,7 @@ import puppeteer from 'puppeteer';
 process.setMaxListeners(20);
 
 export interface BrowserPoolOptions {
-    proxies?: string[];
+    proxies?: (string | undefined)[];
 }
 
 export default class BrowserPool {
@@ -11,16 +11,16 @@ export default class BrowserPool {
 
     private browsers!: puppeteer.Browser[];
 
-    constructor(options?: BrowserPoolOptions) {
-        const proxies = options && options.proxies || [ '' ];
+    constructor(options?: BrowserPoolOptions, headless = true) {
+        const proxies = options && options.proxies || [ undefined ];
 
         this._browsers = proxies.map(proxy => {
             return puppeteer.launch({
-                args: [
-                    proxy.length ? `--proxy-server=${proxy}` : '',
-                ],
+                args: proxy ? [
+                    `--proxy-server=${proxy}`,
+                ] : undefined,
                 ignoreHTTPSErrors: true,
-                headless: false,
+                headless,
             });
         });
     }

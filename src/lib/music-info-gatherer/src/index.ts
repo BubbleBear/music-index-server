@@ -33,10 +33,10 @@ const Adapters = {
 
 export type adapters = typeof Adapters;
 
-const domesticBrowserPool = new BrowserPool();
+const domesticBrowserPool = new BrowserPool({}, false);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign.slice(0, 3),
+    proxies: proxyConfig.foreign,
 });
 
 export class Gatherer {
@@ -259,10 +259,16 @@ export class Gatherer {
                     page = await foreignBrowserPool.random.newPage();
                 }
 
-                await (page.goto as any)(url, {
-                    timeout: 60000,
+                page.on('error', (e) => {
+                    console.log(e);
+                });
+
+                await page.goto(url, {
+                    timeout: 10000,
                     waitUntil: 'load',
                 });
+
+                console.log('loaded: ', url, '*********', path, '*********', channel);
 
                 await page.screenshot({
                     path,
@@ -329,7 +335,7 @@ if (require.main === module) {
         // ws.write(JSON.stringify(r));
         // ws.end();
 
-        await gatherer.screenshot('https://open.spotify.com/track/5QEvnCNqeDyGlWtByBBjyp', './y.png', 'spotify');
+        await gatherer.screenshot('https://y.qq.com/n/yqq/song/002Iaday3kk555.html', './y.png', 'qq');
 
         await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();

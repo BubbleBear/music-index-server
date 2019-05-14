@@ -507,18 +507,19 @@ export default class Service {
     public async screenshot(url: string, path: string, channel: string) {
         await this.gatherer.screenshot(url, path, channel);
 
-        console.log('screenshot: ', url, '#########', path, '#########', channel);
+        console.log('screenshot: ', path, '#########', channel);
     }
 
     public async batchScreenshot(options: {
         url: string, path: string, channel: string
     }[]) {
-        await Promise.all(options.map((option) => {
-            return screenshotLimit(async () => {
-                console.log('############### before screenshot: ', option.url);
-                return await this.screenshot(option.url, option.path, option.channel);
-            });
-        }));
+        await Promise.all(
+            options.map((option) => {
+                return screenshotLimit(async () => {
+                    return await this.screenshot(option.url, option.path, option.channel);
+                });
+            })
+        );
     }
 
     public async restartSSClients(attachTo: any) {
@@ -559,16 +560,24 @@ if (require.main === module) {
         const service = new Service();
         await service.sync();
 
-        const a: any = {};
+        // const a: any = {};
 
-        const x = await service.restartSSClients(a);
+        // const x = await service.restartSSClients(a);
 
-        await new Promise((resolve) => {
-            setTimeout(async () => {
-                await service.restartSSClients(a);
-            }, 10000);
-        });
+        // await new Promise((resolve) => {
+        //     setTimeout(async () => {
+        //         await service.restartSSClients(a);
+        //     }, 10000);
+        // });
 
-        console.log(x);
+        // console.log(x);
+
+        await service.batchScreenshot([
+            {
+                url: 'https://y.qq.com/n/yqq/song/002Iaday3kk555.html',
+                path: './y.png',
+                channel: 'qq',
+            }
+        ]);
     }();
 }
