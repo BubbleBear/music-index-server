@@ -36,7 +36,7 @@ export type adapters = typeof Adapters;
 const domesticBrowserPool = new BrowserPool({}, false);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign,
+    proxies: proxyConfig.foreign.slice,
 });
 
 export class Gatherer {
@@ -264,7 +264,7 @@ export class Gatherer {
                 });
 
                 await page.goto(url, {
-                    timeout: 10000,
+                    timeout: 30000,
                     waitUntil: 'load',
                 });
 
@@ -277,6 +277,25 @@ export class Gatherer {
                 break;
             } catch (e) {
                 errors.push(e);
+
+                if (page) {
+                    try {
+                        await page.close();
+                    } catch (err) {
+                        error({
+                            module: 'music-info-gatherer',
+                            function: 'screenshot#close',
+                            url,
+                            path,
+                            channel,
+                            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                            error: {
+                                message: err.message,
+                                stack: err.stack,
+                            },
+                        });
+                    }
+                }
 
                 warn({
                     module: 'music-info-gatherer',

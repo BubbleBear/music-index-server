@@ -52,7 +52,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
                 },
                 id: v.id,
                 url: `https://music.163.com/#/song?id=${v.id}`,
-                comments: await this.commentCount(v.id),
+                comments: await this.commentCount(v.id) || '评论数查询错误',
             };
         });
 

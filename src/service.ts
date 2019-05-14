@@ -572,12 +572,12 @@ if (require.main === module) {
 
         // console.log(x);
 
-        await service.batchScreenshot([
-            {
-                url: 'https://y.qq.com/n/yqq/song/002Iaday3kk555.html',
-                path: './y.png',
-                channel: 'qq',
-            }
-        ]);
+        // await service.batchScreenshot([
+        //     {
+        //         url: 'https://y.qq.com/n/yqq/song/002Iaday3kk555.html',
+        //         path: './y.png',
+        //         channel: 'qq',
+        //     }
+        // ]);
     }();
 }
