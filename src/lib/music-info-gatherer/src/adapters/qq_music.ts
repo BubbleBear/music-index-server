@@ -1,7 +1,7 @@
-import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
+
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
 
 export default class QQMusicAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {

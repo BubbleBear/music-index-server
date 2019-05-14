@@ -1,14 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
 
-import Service from './service';
-import router from './router';
-import { info, warn, error } from './logger';
-
 import Koa from 'koa';
 import bodyparser from 'koa-bodyparser';
 import serve from 'koa-static';
 import cors from '@koa/cors';
+
+import Service from './service';
+import router from './router';
+import { info, warn, error } from './logger';
 
 process.setMaxListeners(20);
 
@@ -22,7 +22,9 @@ try {
 
 const app = new Koa();
 
-app.context.service = new Service();
+Object.defineProperty(app.context, 'service', {
+    get: () => new Service(),
+});
 
 app
     .use(cors())

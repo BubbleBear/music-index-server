@@ -1,8 +1,8 @@
-import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
-import { parseSetCookie } from '../lib/utils';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
+
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
+import { parseSetCookie } from '../lib/utils';
 
 export default class SpotifyAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {

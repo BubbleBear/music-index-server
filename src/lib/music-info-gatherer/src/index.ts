@@ -33,16 +33,11 @@ const Adapters = {
 
 export type adapters = typeof Adapters;
 
-export interface GathererOptions {
-    proxies: {
-        itunes?: string,
-        kkbox?: string,
-        netease?: string,
-        qq?: string,
-        spotify?: string,
-        youtube?: string,
-    };
-}
+const domesticBrowserPool = new BrowserPool();
+
+const foreignBrowserPool = new BrowserPool({
+    proxies: proxyConfig.foreign,
+});
 
 export class Gatherer {
     private domestics: { [prop: string]: any } & { netease: boolean, qq: boolean }
@@ -55,17 +50,13 @@ export class Gatherer {
 
     private refreshPublisher = new emitter.EventEmitter().setMaxListeners(30);
 
-    public domesticBrowserPool: BrowserPool;
-
-    public foreignBrowserPool: BrowserPool;
-
     public domesticProxyPool: ProxyPool;
 
     public foreignProxyPool: ProxyPool;
 
     public redis: Redis.Redis;
 
-    constructor(options: GathererOptions) {
+    constructor() {
         const gatherer = this;
 
         this.redis = new Redis({
@@ -183,12 +174,6 @@ export class Gatherer {
                 return proxies[next];
             },
         });
-
-        this.domesticBrowserPool = new BrowserPool();
-
-        this.foreignBrowserPool = new BrowserPool({
-            proxies: proxyConfig.foreign,
-        });
     }
 
     public async retry(tag: keyof typeof Adapters, searchOptions: SearchOptions, initProxy?: string, times: number = 3) {
@@ -267,9 +252,9 @@ export class Gatherer {
         while (retry--) {
             try {
                 if (this.domestics[channel]) {
-                    page = await this.domesticBrowserPool.random.newPage();
+                    page = await domesticBrowserPool.random.newPage();
                 } else {
-                    page = await this.foreignBrowserPool.random.newPage();
+                    page = await foreignBrowserPool.random.newPage();
                 }
 
                 await (page.goto as any)(url, {
@@ -335,10 +320,7 @@ export class Gatherer {
 
 if (require.main === module) {
     !async function() {
-        const gatherer = new Gatherer({
-            proxies: {
-            },
-        });
+        const gatherer = new Gatherer();
 
         // const r = await gatherer.search('好心分手', '卢巧音');
         // const ws = fs.createWriteStream(path.join(__dirname, '../../../../x.json')); 
@@ -350,7 +332,5 @@ if (require.main === module) {
         await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();
         await gatherer.foreignProxyPool.destroy();
-        await gatherer.domesticBrowserPool.destroy();
-        await gatherer.foreignBrowserPool.destroy();
     }()
 }

@@ -1,9 +1,9 @@
-import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 import { tify } from 'chinese-conv';
 import { google } from 'googleapis';
+
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 /**
  * The YouTube Data API uses a quota to ensure that developers use the 

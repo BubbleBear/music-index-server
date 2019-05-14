@@ -1,9 +1,9 @@
-import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
-import { trim } from '../lib/utils';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
 import { JSDOM } from 'jsdom';
+
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
+import { trim } from '../lib/utils';
 
 export default class KkboxAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {

@@ -1,7 +1,7 @@
-import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
+
+import AbstractAdapter, { SearchOptions, AdapterOptions } from './abstract';
 
 export default class YoutubeAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {

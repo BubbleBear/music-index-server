@@ -1,8 +1,8 @@
-import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
-import { encrypt } from '../lib/netease_cypher';
-
 import axios, { AxiosRequestConfig } from 'axios';
 import ProxyAgent from 'proxy-agent';
+
+import AbstractAdapter, { SearchOptions, SearchReturn, AdapterOptions } from './abstract';
+import { encrypt } from '../lib/netease_cypher';
 
 export default class NeteaseMusicAdapter extends AbstractAdapter {
     constructor(options: AdapterOptions = {}) {

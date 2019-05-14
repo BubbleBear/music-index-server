@@ -3,11 +3,11 @@ import * as stream from 'stream';
 import * as path from 'path';
 import * as util from 'util';
 
-import { filterUndefinedAndEmpty } from './utils';
-
 import Router from 'koa-router';
 import moment from 'moment';
 import list2csv from 'list2csv';
+
+import { filterUndefinedAndEmpty } from './utils';
 
 const router = new Router();
 

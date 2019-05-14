@@ -6,9 +6,9 @@ import { Gatherer, adapters } from './lib/music-info-gatherer/src';
 import { SearchReturn } from './lib/music-info-gatherer/src/adapters/abstract';
 import { normalizeString } from './utils';
 import { Config } from './config';
+import redis from './connection/redis';
+import mongo from './connection/mongo';
 
-import mongo, { MongoClient, Db } from "mongodb";
-import Redis from 'ioredis';
 import moment from 'moment';
 import plimit from 'p-limit';
 import archiver from 'archiver';
@@ -30,32 +30,18 @@ const REDIS_CACHED_FILE_MAP = 'cached.file';
 
 const deprecated: boolean = true;
 
+type ThenInfer<T> = T extends Promise<infer U> ? U : T;
+
 export default class Service {
-    client!: MongoClient;
-
-    redis: Redis.Redis;
-
     config: Config;
 
-    private _client: Promise<MongoClient>;
+    private db!: ReturnType<ThenInfer<typeof mongo>['db']>;
 
-    private db!: Db;
-
-    private gatherer: Gatherer;
+    private get gatherer() {
+        return new Gatherer();
+    }
 
     constructor() {
-        this._client = mongo.connect('mongodb://localhost:27017', {
-            useNewUrlParser: true,
-        });
-
-        this.redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
-
-        this.gatherer = new Gatherer({ proxies: {}});
-
         this.config = new Config();
     }
 
@@ -64,8 +50,8 @@ export default class Service {
             return;
         }
 
-        this.client = await this._client;
-        this.db = this.client.db('qq_music_crawler');
+        const client = await mongo;
+        this.db = client.db('qq_music_crawler');
     }
 
     async updateCompany(companyId: number) {
@@ -77,7 +63,7 @@ export default class Service {
         while (retry--) {
             try {
                 const crawler = require('../scripts/qq_music_crawler');
-                await crawler.getDB(this.client);
+                await crawler.getDB(await mongo);
                 await crawler.getCompany(companyId);
 
                 break;
@@ -159,7 +145,7 @@ export default class Service {
     }
 
     async cleanseCrawlerCache() {
-        return await this.redis.del(REDIS_QQ_CRALWER_SET);
+        return await redis.del(REDIS_QQ_CRALWER_SET);
     }
 
     async createCompanyStatistics(assignedDate?: number | string) {
@@ -210,7 +196,7 @@ export default class Service {
 
         const date2 = moment(assignedDate).format('YYYY-MM-DD');
 
-        await this.redis.sadd(REDIS_QQ_STATISTICS_SET, date1, date2);
+        await redis.sadd(REDIS_QQ_STATISTICS_SET, date1, date2);
 
         return true;
     }
@@ -231,7 +217,7 @@ export default class Service {
     async getStatisticsDates() {
         await this.sync();
 
-        const dates = await this.redis.smembers(REDIS_QQ_STATISTICS_SET);
+        const dates = await redis.smembers(REDIS_QQ_STATISTICS_SET);
 
         return dates;
     }
@@ -261,7 +247,7 @@ export default class Service {
 
     async cancelCrawling() {
         try {
-            await this.redis.del(REDIS_QQ_CRALWER_STATUS);
+            await redis.del(REDIS_QQ_CRALWER_STATUS);
 
             return true;
         } catch (e) {
@@ -281,7 +267,7 @@ export default class Service {
                 return searchLimit(async () => {
                     const status = 
                         option.companyId
-                        ? await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
+                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
                         : 0;
 
                     return {
@@ -429,17 +415,17 @@ export default class Service {
     }
 
     public async getDownloadingStatus(redisKey: string) {
-        const downloading = await this.redis.sismember(REDIS_DOWNLOADING_STATUS_SET, redisKey);
+        const downloading = await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, redisKey);
 
         return Boolean(downloading);
     }
 
     public async markDownloading(redisKey: string) {
-        await this.redis.sadd(REDIS_DOWNLOADING_STATUS_SET, redisKey);
+        await redis.sadd(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
     public async unmarkDownloading(redisKey: string) {
-        await this.redis.srem(REDIS_DOWNLOADING_STATUS_SET, redisKey);
+        await redis.srem(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
     public async cacheCSV(content: string, filepath: string, redisKey: string, expire: number = 76800) {
@@ -450,7 +436,7 @@ export default class Service {
     }
 
     public async listDownloadingFiles() {
-        return await this.redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
+        return await redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
     }
 
     public async cacheFile(redisKey: string, filepath: string) {
@@ -482,18 +468,18 @@ export default class Service {
             });
         });
 
-        await this.redis.hset(REDIS_CACHED_FILE_MAP, redisKey, archivePath);
+        await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, archivePath);
 
         await del(filepath);
     }
 
     public async listCachedFiles() {
-        return await this.redis.hkeys(REDIS_CACHED_FILE_MAP);
+        return await redis.hkeys(REDIS_CACHED_FILE_MAP);
     }
 
     public async deleteCachedFile(redisKey: string) {
         try {
-            const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
+            const filepath = await redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
             filepath && await del(filepath);
         } catch (e) {
             global.error({
@@ -507,11 +493,11 @@ export default class Service {
             });
         }
 
-        await this.redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
+        await redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
     }
 
     public async openFileStream(redisKey: string) {
-        const filepath = await this.redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
+        const filepath = await redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
 
         return fs.createReadStream(filepath!);
     }
@@ -582,9 +568,5 @@ if (require.main === module) {
         });
 
         console.log(x);
-
-        await service.client.close();
-        await service.redis.disconnect();
-        await service.config.disconnect();
     }();
 }

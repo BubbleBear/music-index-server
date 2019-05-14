@@ -3,13 +3,19 @@ import * as path from 'path';
 
 import Redis from 'ioredis';
 
+import redis from './connection/redis';
+
 const REDIS_CONFIG_KEY = 'music.index.config';
 
+const subscriber = new Redis({
+    host: 'localhost',
+    port: 6379,
+    dropBufferSupport: true,
+});
+
+subscriber.subscribe(REDIS_CONFIG_KEY);
+
 export class Config extends emitter.EventEmitter {
-    redis: Redis.Redis;
-
-    subscriber: Redis.Redis;
-
     private _config: {
         ssclient: {
             configs: object[],
@@ -27,33 +33,19 @@ export class Config extends emitter.EventEmitter {
     constructor(defaultConfigpath = path.join(__dirname, '../config/export.json')) {
         super();
 
-        this.redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
-
-        this.subscriber = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
-
-        this.subscriber.subscribe(REDIS_CONFIG_KEY);
-
-        this.subscriber.on('message', async (channel, message) => {
+        subscriber.on('message', async (channel, message) => {
             console.log(channel, message);
             
             if (channel === REDIS_CONFIG_KEY) {
                 await this.pull();
             }
         });
-
+        
         this._init = this.init(defaultConfigpath);
     }
 
     async init(configPath: string) {
-        if (await this.redis.exists(REDIS_CONFIG_KEY)) {
+        if (await redis.exists(REDIS_CONFIG_KEY)) {
             try {
                 await this.pull();
             } catch (e) {
@@ -68,11 +60,6 @@ export class Config extends emitter.EventEmitter {
         this.emit('ready');
     }
 
-    async disconnect() {
-        this.redis.disconnect();
-        this.subscriber.disconnect();
-    }
-
     async erase() {
         await this._init;
 
@@ -82,11 +69,11 @@ export class Config extends emitter.EventEmitter {
             foreign: [],
         };
 
-        await this.redis.del(REDIS_CONFIG_KEY);
+        await redis.del(REDIS_CONFIG_KEY);
     }
 
     async pull() {
-        const jsonStr = (await this.redis.get(REDIS_CONFIG_KEY))!;
+        const jsonStr = (await redis.get(REDIS_CONFIG_KEY))!;
         this._config = JSON.parse(jsonStr);
         this.emit('pulled');
     }
@@ -95,8 +82,8 @@ export class Config extends emitter.EventEmitter {
         await this._init;
 
         const jsonStr = JSON.stringify(this._config);
-        await this.redis.set(REDIS_CONFIG_KEY, jsonStr);
-        await this.redis.publish(REDIS_CONFIG_KEY, message);
+        await redis.set(REDIS_CONFIG_KEY, jsonStr);
+        await redis.publish(REDIS_CONFIG_KEY, message);
         this.emit('pushed');
     }
 
