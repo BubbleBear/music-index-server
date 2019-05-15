@@ -32,11 +32,11 @@ const Adapters = {
 
 export type adapters = typeof Adapters;
 
-const domesticBrowserPool = new BrowserPool({}, false);
+const domesticBrowserPool = new BrowserPool({}, true);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign.splice(0, 1),
-}, false);
+    proxies: proxyConfig.foreign,
+}, true);
 
 export class Gatherer {
     private domestics: { [prop: string]: any } & { netease: boolean, qq: boolean }
