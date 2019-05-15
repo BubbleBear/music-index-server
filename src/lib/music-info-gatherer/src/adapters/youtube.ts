@@ -16,7 +16,7 @@ export default class YoutubeAdapter extends AbstractAdapter {
             baseURL: 'https://www.youtube.com',
             headers: {
                 'x-youtube-client-name': '1',
-                'x-youtube-client-version': '2.20190423',
+                'x-youtube-client-version': '2.20190514',
                 connection: 'keep-alive',
             },
             httpsAgent: new ProxyAgent(this.proxy),
