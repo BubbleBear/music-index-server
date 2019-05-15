@@ -1,5 +1,7 @@
 import puppeteer from 'puppeteer';
 
+const config = require('../../../../config/index.json');
+
 process.setMaxListeners(20);
 
 export interface BrowserPoolOptions {
@@ -16,7 +18,7 @@ export default class BrowserPool {
 
         this._browsers = proxies.map(proxy => {
             return puppeteer.launch({
-                executablePath: '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome',
+                executablePath: config.chromePath,
                 args: proxy ? [
                     `--proxy-server=${proxy}`,
                 ] : undefined,
