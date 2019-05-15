@@ -16,6 +16,7 @@ export default class BrowserPool {
 
         this._browsers = proxies.map(proxy => {
             return puppeteer.launch({
+                executablePath: '/Applications/Google\ Chrome.app/Contents/MacOS/Google\ Chrome',
                 args: proxy ? [
                     `--proxy-server=${proxy}`,
                 ] : undefined,

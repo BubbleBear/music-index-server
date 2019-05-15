@@ -37,7 +37,9 @@ async function start(startPort = 7777) {
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
+                        // console.log('############ error ############')
                         chunk && console.log(chunk.toString());
+                        // console.log('############ error ############')
                         reject();
                     });
                 });

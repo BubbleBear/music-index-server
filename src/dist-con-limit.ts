@@ -48,7 +48,6 @@ export default function wrapper(concurrency: number, domain: string) {
 
     async function exec(resolve: (value: any) => void, fn: () => Promise<any>) {
         while (!await atom(async () => {
-            console.log('count ########### ', await count());
             if (await count() < concurrency) {
                 await incr();
     

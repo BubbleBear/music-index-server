@@ -1,11 +1,10 @@
-import * as fs from 'fs';
-import * as path from 'path';
 import * as emitter from 'events';
 
 import moment from 'moment';
 import axios from 'axios';
 import Redis from 'ioredis';
 import AsyncLock from 'async-lock';
+import puppeteer from 'puppeteer';
 
 import ItunesAdapter from './adapters/itunes';
 import KkboxAdapter from './adapters/kkbox';
@@ -36,8 +35,8 @@ export type adapters = typeof Adapters;
 const domesticBrowserPool = new BrowserPool({}, false);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign,
-});
+    proxies: proxyConfig.foreign.splice(0, 1),
+}, false);
 
 export class Gatherer {
     private domestics: { [prop: string]: any } & { netease: boolean, qq: boolean }
@@ -49,6 +48,21 @@ export class Gatherer {
     private refreshLock = false;
 
     private refreshPublisher = new emitter.EventEmitter().setMaxListeners(30);
+
+    private chanSpeStrategy:
+    { [prop: string]: (page: puppeteer.Page) => Promise<boolean> } = {
+        youtube: async (page: puppeteer.Page) => {
+            const res = await page.waitForSelector('yt-formatted-string');
+            console.log(res);
+
+            return !!res;
+        },
+        spotify: async (page: puppeteer.Page) => {
+            const res = await page.waitForSelector('.cover-art-image.cover-art-image-loaded[style]');
+
+            return !!res;
+        }
+    };
 
     public domesticProxyPool: ProxyPool;
 
@@ -263,14 +277,20 @@ export class Gatherer {
                     console.log(e);
                 });
 
+                await page.setCacheEnabled(true);
+
                 await page.goto(url, {
-                    timeout: 30000,
+                    timeout: 60000,
                     waitUntil: 'load',
                 });
 
-                console.log('loaded: ', url, '*********', path, '*********', channel);
+                // console.log('loaded: ', url, '*********', path, '*********', channel);
 
-                await page.bringToFront();
+                if (this.chanSpeStrategy[channel]) {
+                    await this.chanSpeStrategy[channel](page);
+                }
+
+                // console.log('fully loaded: ', url, '*********', path, '*********', channel);
 
                 await page.screenshot({
                     path,
@@ -356,7 +376,8 @@ if (require.main === module) {
         // ws.write(JSON.stringify(r));
         // ws.end();
 
-        await gatherer.screenshot('https://y.qq.com/n/yqq/song/002Iaday3kk555.html', './y.png', 'qq');
+        // await gatherer.screenshot('https://open.spotify.com/track/2vehaGr6bpERquj9fPgQk0', './y.png', 'spotify');
+        await gatherer.screenshot('https://www.youtube.com/watch?v=rnavVgXmqdU', './y.png', 'youtube');
 
         await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();
