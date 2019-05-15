@@ -53,7 +53,6 @@ export class Gatherer {
     { [prop: string]: (page: puppeteer.Page) => Promise<boolean> } = {
         youtube: async (page: puppeteer.Page) => {
             const res = await page.waitForSelector('yt-formatted-string');
-            console.log(res);
 
             return !!res;
         },
