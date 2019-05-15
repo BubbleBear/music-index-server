@@ -17,6 +17,7 @@ import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 import BrowserPool from './browser_pool';
 
+const config = require('../../../../config/index.json');
 const proxyConfig = require('../../../../config/proxy.json');
 
 const lock = new AsyncLock();
@@ -35,7 +36,7 @@ export type adapters = typeof Adapters;
 const domesticBrowserPool = new BrowserPool({}, true);
 
 const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign,
+    proxies: proxyConfig.foreign.slice(0, config.browserCap),
 }, true);
 
 export class Gatherer {
