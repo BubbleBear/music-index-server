@@ -37,9 +37,9 @@ async function start(startPort = 7777) {
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
-                        // console.log('############ error ############')
+                        console.log('############ error ############')
                         chunk && console.log(chunk.toString());
-                        // console.log('############ error ############')
+                        console.log('############ error ############')
                         reject();
                     });
                 });
@@ -60,7 +60,7 @@ function getCommand(args, port) {
 
 async function stop() {
     clientProsessPool.forEach(p => {
-        p.kill('SIGTERM');
+        p.kill('SIGKILL');
     })
 
     await Promise.all(clientProsessPool.map(p => {
@@ -71,6 +71,8 @@ async function stop() {
             });
         });
     }));
+
+    clientProsessPool.splice(0, clientProsessPool.length);
 }
 
 process.on('beforeExit', async () => {
@@ -79,9 +81,13 @@ process.on('beforeExit', async () => {
 
 if (require.main === module) {
     !async function() {
-        await start();
+        setInterval(async () => {
+            await stop();
+            await start();
+            console.log(clientProsessPool.length)
+        }, process.argv[2] || 5 * 60 * 1000);
 
-        subscriber.on('message', async (channel, message) => {
+        false && subscriber.on('message', async (channel, message) => {
             if (channel === REDIS_CONFIG_KEY && message === 'ssclient') {
                 await stop();
                 await start();
