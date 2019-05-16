@@ -9,12 +9,13 @@ export default function wrapper(concurrency: number, domain: string) {
 
     const queue: ReturnType<typeof exec.bind>[] = [];
 
-    const init = redis.del(REDIS_LOCK, REDIS_COUNT);
+    const init = redis.del(REDIS_COUNT);
 
     async function atom(fn: (...args: any) => Promise<any>) {
         await init;
 
         const lock = await redis.setnx(REDIS_LOCK, true);
+        await redis.expire(REDIS_LOCK, 60);
 
         if (lock) {
             await fn();

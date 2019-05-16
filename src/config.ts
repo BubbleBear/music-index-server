@@ -17,20 +17,28 @@ subscriber.subscribe(REDIS_CONFIG_KEY);
 
 export class Config extends emitter.EventEmitter {
     private _config: {
-        ssclient: {
+        ssClient: {
             configs: object[],
         },
         domestics: string[],
         foreign: string[],
+        browserPool: {
+            chromePath: string,
+            browserCap: number,
+        },
     } = {
-        ssclient: { configs: [] },
+        ssClient: { configs: [] },
         domestics: [],
         foreign: [],
+        browserPool: {
+            chromePath: '',
+            browserCap: 0,
+        },
     };
 
     private _init: Promise<void>;
 
-    constructor(defaultConfigpath = path.join(__dirname, '../config/export.json')) {
+    constructor(defaultConfigDir = path.join(__dirname, '../config')) {
         super();
 
         subscriber.on('message', async (channel, message) => {
@@ -41,19 +49,20 @@ export class Config extends emitter.EventEmitter {
             }
         });
         
-        this._init = this.init(defaultConfigpath);
+        this._init = this.init(defaultConfigDir);
     }
 
-    async init(configPath: string) {
+    async init(configDir: string) {
         if (await redis.exists(REDIS_CONFIG_KEY)) {
             try {
                 await this.pull();
             } catch (e) {
                 await this.erase();
-                await this.init(configPath);
+                await this.init(configDir);
             }
         } else {
-            this._config.ssclient = require(configPath);
+            this._config = require(path.join(configDir, 'index.json'));
+            console.log(this._config)
             await this.push('init');
         }
         
@@ -64,9 +73,13 @@ export class Config extends emitter.EventEmitter {
         await this._init;
 
         this._config = {
-            ssclient: { configs: [] },
+            ssClient: { configs: [] },
             domestics: [],
             foreign: [],
+            browserPool: {
+                chromePath: '',
+                browserCap: 0,
+            },
         };
 
         await redis.del(REDIS_CONFIG_KEY);
@@ -85,14 +98,14 @@ export class Config extends emitter.EventEmitter {
         this.emit('pushed');
     }
 
-    async set(key: keyof Config['_config'], value: Config['_config'][typeof key]) {
+    async set<T extends keyof Config['_config']>(key: T, value: Config['_config'][T]) {
         await this._init;
         
         this._config[key] = value;
         await this.push(key);
     }
 
-    async get(key: keyof Config['_config']): Promise<Config['_config'][keyof Config['_config']]> {
+    async get<T extends keyof Config['_config']>(key: T): Promise<Config['_config'][T]> {
         await this._init;
 
         return JSON.parse(JSON.stringify(this._config[key]));
@@ -108,5 +121,6 @@ export class Config extends emitter.EventEmitter {
 if (require.main === module) {
     !async function() {
         const config = await new Config();
+        await config.erase();
     }()
 }

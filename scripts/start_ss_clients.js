@@ -25,10 +25,10 @@ async function start(startPort = 7777) {
     const confStr = await redis.get(REDIS_CONFIG_KEY);
 
     if (confStr) {
-        config = JSON.parse(confStr).ssclient;
+        config = JSON.parse(confStr).ssClient;
     } else {
         try {
-            config = require('../config/export.json');
+            config = require('../config/index.json').ssClient;
         } catch (e) {}
     }
 
@@ -46,14 +46,14 @@ async function start(startPort = 7777) {
 
                 await new Promise((resolve, reject) => {
                     ssp.stdout.on('data', (chunk) => {
-                        // chunk && console.log(chunk.toString());
+                        chunk && console.log(chunk.toString());
                         resolve();
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
-                        // console.log('############ error ############')
-                        // chunk && console.log(chunk.toString());
-                        // console.log('############ error ############')
+                        console.log('############ error ############')
+                        chunk && console.log(chunk.toString());
+                        console.log('############ error ############')
                         reject();
                     });
                 });

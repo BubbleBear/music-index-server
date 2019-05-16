@@ -1,11 +1,11 @@
 import puppeteer from 'puppeteer';
 
-const config = require('../../../../config/index.json');
-
 process.setMaxListeners(20);
 
 export interface BrowserPoolOptions {
+    chromePath: string;
     proxies?: (string | undefined)[];
+    headless: boolean;
 }
 
 export default class BrowserPool {
@@ -13,17 +13,17 @@ export default class BrowserPool {
 
     private browsers!: puppeteer.Browser[];
 
-    constructor(options?: BrowserPoolOptions, headless = true) {
+    constructor(options: BrowserPoolOptions) {
         const proxies = options && options.proxies || [ undefined ];
 
         this._browsers = proxies.map(proxy => {
             return puppeteer.launch({
-                executablePath: config.chromePath,
+                executablePath: options.chromePath,
                 args: proxy ? [
                     `--proxy-server=${proxy}`,
                 ] : undefined,
                 ignoreHTTPSErrors: true,
-                headless,
+                headless: options.headless,
             });
         });
     }
@@ -51,7 +51,10 @@ export default class BrowserPool {
 
 if (require.main === module) {
     !async function() {
-        const bp = new BrowserPool();
+        const bp = new BrowserPool({
+            chromePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+            headless: false,
+        });
 
         await bp.sync();
 

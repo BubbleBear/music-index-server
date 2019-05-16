@@ -422,7 +422,7 @@
           index.innerHTML = i + 1
           id.innerHTML = value.company_id
           name.innerHTML = value.name
-          download.href = host + '/api/v1/download?filename=' + value
+          download.href = host + '/api/v1/download?filename=' + value.company_id
           download.innerHTML = '下载'
           downloadWarp.append(download)
           fileList.children[0].append(index)

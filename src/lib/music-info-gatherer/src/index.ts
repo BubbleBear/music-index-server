@@ -16,9 +16,7 @@ import { SearchOptions, SearchReturn } from './adapters/abstract';
 import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 import BrowserPool from './browser_pool';
-
-const config = require('../../../../config/index.json');
-const proxyConfig = require('../../../../config/proxy.json');
+import { Config } from '../../../config';
 
 const lock = new AsyncLock();
 
@@ -33,13 +31,15 @@ const Adapters = {
 
 export type adapters = typeof Adapters;
 
-const domesticBrowserPool = new BrowserPool({}, true);
+const REDIS_FOREIGN_PROXY_LOCK = 'gatherer:foreign.proxy:lock';
 
-const foreignBrowserPool = new BrowserPool({
-    proxies: proxyConfig.foreign.slice(0, config.browserCap),
-}, true);
+let domesticBrowserPool: BrowserPool;
+
+let foreignBrowserPool: BrowserPool;
 
 export class Gatherer {
+    private config!: Config;
+
     private domestics: { [prop: string]: any } & { netease: boolean, qq: boolean }
             = { netease: true, qq: true };
 
@@ -94,10 +94,12 @@ export class Gatherer {
 
                 gatherer.refreshLock = true;
 
+                await gatherer.init();
+
                 let proxy;
 
                 try {
-                    const url = proxyConfig.domestics[0];
+                    const url = (await gatherer.config.get('domestics'))[0];
                     const response = await axios(url);
                     proxy = response.data.domain && response.data.port
                         ? `http://${response.data.domain}:${response.data.port}`
@@ -134,10 +136,11 @@ export class Gatherer {
             name: 'foreignProxyPool',
             strategy: 'rotate',
             async get() {
-                const interval = 5000;
+                const interval = 10000;
                 const availableKey = 'proxy#foreignProxyPool#unavailable';
 
-                const proxies = proxyConfig.foreign;
+                await gatherer.init();
+                const proxies = await gatherer.config.get('foreign');
 
                 const size = proxies.length;
 
@@ -188,6 +191,33 @@ export class Gatherer {
                 return proxies[next];
             },
         });
+    }
+
+    private async init() {
+        if (!this.config) {
+            this.config = new Config();
+        }
+
+        const browserConfig = await this.config.get('browserPool');
+
+        if (!domesticBrowserPool) {
+            domesticBrowserPool = new BrowserPool({
+                chromePath: browserConfig.chromePath,
+                headless: true,
+            });
+
+            await domesticBrowserPool.sync();
+        }
+
+        if (!foreignBrowserPool) {
+            foreignBrowserPool = new BrowserPool({
+                chromePath: browserConfig.chromePath,
+                proxies: (await this.config.get('foreign')).slice(0, browserConfig.browserCap),
+                headless: true,
+            });
+
+            await foreignBrowserPool.sync();
+        }
     }
 
     public async retry(tag: keyof typeof Adapters, searchOptions: SearchOptions, initProxy?: string, times: number = 3) {
@@ -263,13 +293,13 @@ export class Gatherer {
 
         const errors = [];
 
+        await this.init();
+
         while (retry--) {
             try {
                 if (this.domestics[channel]) {
-                    await domesticBrowserPool.sync();
                     page = await domesticBrowserPool.random.newPage();
                 } else {
-                    await foreignBrowserPool.sync();
                     page = await foreignBrowserPool.random.newPage();
                 }
 
@@ -370,11 +400,6 @@ export class Gatherer {
 if (require.main === module) {
     !async function() {
         const gatherer = new Gatherer();
-
-        // const r = await gatherer.search('好心分手', '卢巧音');
-        // const ws = fs.createWriteStream(path.join(__dirname, '../../../../x.json')); 
-        // ws.write(JSON.stringify(r));
-        // ws.end();
 
         // await gatherer.screenshot('https://open.spotify.com/track/2vehaGr6bpERquj9fPgQk0', './y.png', 'spotify');
         await gatherer.screenshot('https://www.youtube.com/watch?v=rnavVgXmqdU', './y.png', 'youtube');
