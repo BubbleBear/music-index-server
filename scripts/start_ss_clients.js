@@ -32,7 +32,8 @@ async function start(startPort = 7777) {
         } catch (e) {}
     }
 
-    const serverList = config.configs;
+    // it's essential to shuffle the serverlist to tolerate ss server failures;
+    const serverList = shuffle(config.configs);
     let port = startPort;
 
     for (const server of serverList) {
@@ -69,6 +70,17 @@ async function start(startPort = 7777) {
 
 function getCommand(args, port) {
     return `-p ${args.server_port} -k ${args.password} -m ${args.method} -s ${args.server} -l ${port}`;
+}
+
+function shuffle(source) {
+    const target = Array(source.length);
+    for (const i in source) {
+        const j = parseInt(i * Math.random());
+        target[i] = target[j];
+        target[j] = source[i];
+    }
+
+    return target;
 }
 
 async function stop() {

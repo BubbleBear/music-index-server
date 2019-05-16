@@ -257,10 +257,10 @@ export default class Service {
         }
     }
 
-    public async searchTracks(options: {
+    public async batchSearchTrack(options: {
         songName: string,
         artistName: string,
-        platform?: string,
+        channel?: string,
         albumName?: number | string,
         companyId: number | string,
     }[]) {
@@ -282,7 +282,7 @@ export default class Service {
         );
     }
 
-    public async searchTrack({ songName, artistName, platform, albumName, companyId }: {
+    public async searchTrack({ songName, artistName, albumName }: {
             songName: string,
             artistName: string,
             platform?: string,
@@ -498,25 +498,38 @@ export default class Service {
         await redis.hdel(REDIS_CACHED_FILE_MAP, redisKey);
     }
 
-    public async openFileStream(redisKey: string) {
+    public async getFilePath(redisKey: string) {
         const filepath = await redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
 
-        return fs.createReadStream(filepath!);
+        return filepath;
     }
 
-    public async screenshot(url: string, path: string, channel: string) {
+    public async openFileStream(filepath: string) {
+        return fs.createReadStream(filepath);
+    }
+
+    public async screenshot({ url, path, channel }: {
+        url: string,
+        path: string,
+        channel: string,
+    }) {
         await this.gatherer.screenshot(url, path, channel);
 
         console.log('screenshot: ', path, '#########', channel);
     }
 
     public async batchScreenshot(options: {
-        url: string, path: string, channel: string
+        url: string, path: string, channel: string, companyId: number
     }[]) {
         await Promise.all(
             options.map((option) => {
                 return screenshotLimit(async () => {
-                    return await this.screenshot(option.url, option.path, option.channel);
+                    const status = 
+                        option.companyId
+                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
+                        : 0;
+
+                    return status && await this.screenshot(option);
                 });
             })
         );
@@ -543,25 +556,5 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
         await service.sync();
-
-        // const a: any = {};
-
-        // const x = await service.restartSSClients(a);
-
-        // await new Promise((resolve) => {
-        //     setTimeout(async () => {
-        //         await service.restartSSClients(a);
-        //     }, 10000);
-        // });
-
-        // console.log(x);
-
-        // await service.batchScreenshot([
-        //     {
-        //         url: 'https://y.qq.com/n/yqq/song/002Iaday3kk555.html',
-        //         path: './y.png',
-        //         channel: 'qq',
-        //     }
-        // ]);
     }();
 }

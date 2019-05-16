@@ -206,15 +206,6 @@ router.get('/get_track', async (ctx, next) => {
         albumName: query.album_name,
     });
 
-    // Promise.all(Object.keys(bestMatches).map(async (matchKey: any) => {
-    //     if (bestMatches[matchKey]) {
-    //         await ctx.service.screenShot(
-    //             bestMatches[matchKey].url,
-    //             path.join(__dirname, '../runtime', `${query.song_name}_${query.artist_name}_${matchKey}.png`),
-    //         );
-    //     }
-    // }));
-
     ctx.body = {
         success: true,
         data: bestMatches,
@@ -272,7 +263,7 @@ router.get('/get_tracks', async (ctx, next) => {
         return tacc.concat(albums);
     }, []);
 
-    ctx.service.searchTracks(tracks)
+    ctx.service.batchSearchTrack(tracks)
     .then(async (result) => {
         const downloading = await ctx.service.getDownloadingStatus(query.company_id);
 
@@ -337,7 +328,7 @@ router.get('/get_tracks', async (ctx, next) => {
             csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
 
             if (screenshot) {
-                const batchScreenshotOptions = result.reduce((acc, cur) => {
+                const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
                     const d = cur.data;
                     
                     const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
@@ -349,11 +340,17 @@ router.get('/get_tracks', async (ctx, next) => {
                                 url,
                                 path: filename,
                                 channel: k,
+                                companyId: query.company_id,
                             };
                         }
-                    }).filter(v => v);
+                    }).filter((v): v is {
+                        url: string,
+                        path: string,
+                        channel: keyof typeof d,
+                        companyId: number,
+                    } => !!v);
 
-                    acc = acc.concat(part as any);
+                    acc = acc.concat(part);
 
                     return acc;
                 }, []);
@@ -421,19 +418,31 @@ router.get('/delete_cached_file', async (ctx, next) => {
 router.get('/download', async (ctx, next) => {
     const query = ctx.query;
 
-    const rs = await ctx.service.openFileStream(query.filename);
+    const filepath = await ctx.service.getFilePath(query.filename);
 
-    ctx.set({
-        'Content-Type': 'application/octet-stream;charset=utf8',
-        'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}.zip`,
-    });
+    if (filepath) {
+        const rs = await ctx.service.openFileStream(filepath!);
 
-    ctx.body = rs;
+        ctx.set({
+            'Content-Type': 'application/octet-stream;charset=utf8',
+            'Content-Disposition': `attachment;filename*=UTF-8''${encodeURI(query.filename)}${path.extname(filepath!)}`,
+        });
+
+        ctx.body = rs;
+    } else {
+        await ctx.service.deleteCachedFile(query.filename);
+
+        ctx.body = {
+            success: false,
+            message: 'file not exists or corrupted',
+        };
+    }
 
     return await next();
 });
 
-router.post('/config', async (ctx, next) => {});
+router.post('/config', async (ctx, next) => {
+});
 
 export default router;
 
