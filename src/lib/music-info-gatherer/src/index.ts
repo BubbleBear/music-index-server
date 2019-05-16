@@ -304,7 +304,7 @@ export class Gatherer {
                     try {
                         await page.close();
                     } catch (err) {
-                        error({
+                        warn({
                             module: 'music-info-gatherer',
                             function: 'screenshot#close',
                             url,
@@ -350,7 +350,7 @@ export class Gatherer {
             try {
                 await page.close();
             } catch (e) {
-                error({
+                warn({
                     module: 'music-info-gatherer',
                     function: 'screenshot#close',
                     url,
