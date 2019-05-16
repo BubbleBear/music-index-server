@@ -81,6 +81,8 @@ process.on('beforeExit', async () => {
 
 if (require.main === module) {
     !async function() {
+        await start();
+        
         setInterval(async () => {
             await stop();
             await start();
