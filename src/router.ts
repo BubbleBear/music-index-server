@@ -441,7 +441,36 @@ router.get('/download', async (ctx, next) => {
     return await next();
 });
 
+router.get('/config', async (ctx, next) => {
+    const config = await ctx.service.config.dump();
+
+    ctx.body = {
+        success: true,
+        config,
+    };
+
+    return await next();
+});
+
 router.post('/config', async (ctx, next) => {
+    const files = ctx.request.files || {};
+
+    const filename = Object.keys(files)[0];
+    const file = files[filename];
+    const content = await util.promisify(fs.readFile)(file.path, {
+        encoding: 'utf8',
+    });
+
+    await Promise.all(Object.keys(content).map(async (v: any) => {
+        console.log(v, content[v]);
+        await ctx.service.updateConfig(v, content[v]);
+    }));
+
+    ctx.body = {
+        success: true,
+    };
+
+    return await next();
 });
 
 export default router;

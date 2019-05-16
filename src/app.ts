@@ -2,7 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import Koa from 'koa';
-import bodyparser from 'koa-bodyparser';
+import bodyparser from 'koa-body';
 import serve from 'koa-static';
 import cors from '@koa/cors';
 
@@ -29,7 +29,9 @@ Object.defineProperty(app.context, 'service', {
 app
     .use(cors())
     .use(serve(path.join(__dirname, '../public')))
-    .use(bodyparser())
+    .use(bodyparser({
+        multipart: true,
+    }))
     .use(router.prefix('/api/v1').routes())
 
 app.listen(3000, () => {

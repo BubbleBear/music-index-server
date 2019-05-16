@@ -118,9 +118,13 @@ export class Config extends emitter.EventEmitter {
     }
 }
 
+export default new Config();
+
 if (require.main === module) {
     !async function() {
         const config = await new Config();
-        await config.erase();
+        const conf1 = await new Config();
+        // await config.erase();
+        await config.set('domestics', []);
     }()
 }
