@@ -79,8 +79,6 @@ export class Config extends emitter.EventEmitter {
     }
 
     async push(message: string) {
-        await this._init;
-
         const jsonStr = JSON.stringify(this._config);
         await redis.set(REDIS_CONFIG_KEY, jsonStr);
         await redis.publish(REDIS_CONFIG_KEY, message);
@@ -110,9 +108,5 @@ export class Config extends emitter.EventEmitter {
 if (require.main === module) {
     !async function() {
         const config = await new Config();
-
-        config.set('ssclient', {
-            configs: [],
-        });
     }()
 }

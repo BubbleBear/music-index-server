@@ -12,7 +12,7 @@ import NeteaseMusicAdapter from './adapters/netease_music';
 import QQMusicAdapter from './adapters/qq_music';
 import SpotifyAdapter from './adapters/spotify';
 import YoutubeAdapter from './adapters/youtube';
-import { Adapter, SearchOptions, SearchReturn } from './adapters/abstract';
+import { SearchOptions, SearchReturn } from './adapters/abstract';
 import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 import BrowserPool from './browser_pool';
@@ -284,13 +284,13 @@ export class Gatherer {
                     waitUntil: 'load',
                 });
 
-                // console.log('loaded: ', url, '*********', path, '*********', channel);
+                console.log('loaded: ', url, '*********', path, '*********', channel);
 
                 if (this.chanSpeStrategy[channel]) {
                     await this.chanSpeStrategy[channel](page);
                 }
 
-                // console.log('fully loaded: ', url, '*********', path, '*********', channel);
+                console.log('fully loaded: ', url, '*********', path, '*********', channel);
 
                 await page.screenshot({
                     path,

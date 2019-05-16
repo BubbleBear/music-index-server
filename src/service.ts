@@ -71,7 +71,7 @@ export default class Service {
                 break;
             } catch (err) {
                 global.error({
-                    module: 'scripts/qq_music_crawler',
+                    module: 'service',
                     time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                     desc: 'company error',
                     companyId: companyId,
@@ -448,7 +448,7 @@ export default class Service {
 
         const archive = archiver('zip').on('error', (e) => {
             global.error({
-                module: 'main',
+                module: 'service',
                 method: 'getTracks#archiving',
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 error: {
@@ -485,7 +485,7 @@ export default class Service {
             filepath && await del(filepath);
         } catch (e) {
             global.error({
-                module: 'main',
+                module: 'service',
                 method: 'deleteCachedFile',
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 error: {
@@ -522,36 +522,20 @@ export default class Service {
         );
     }
 
-    public async restartSSClients(attachTo: any) {
-        console.log(attachTo.SSClients);
-
-        if (attachTo.SSClients) {
-            (attachTo as cp.ChildProcess).kill('SIGTERM');
-
-            await new Promise((resolve) => {
-                attachTo.SSClients.on('close', () => {
-                    console.log('termed')
-                    resolve();
-                });
+    public async updateConfig(key: Parameters<Config['set']>[0], value: any) {
+        try {
+            await this.config.set(key, value);
+        } catch (e) {
+            global.error({
+                module: 'service',
+                method: 'updateConfig',
+                time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                error: {
+                    message: e.message,
+                    stack: e.stack,
+                },
             });
         }
-
-        const ssp = cp.spawn(
-            'node',
-            [ `${path.join(__dirname, '../scripts/start_ss_clients.js')}` ],
-        );
-    
-        ssp.stdout.on('data', (chunk) => {
-            chunk && console.log(chunk.toString());
-        });
-    
-        ssp.stderr.on('data', (chunk) => {
-            chunk && console.log(chunk.toString());
-        });
-
-        attachTo.SSClients = ssp;
-
-        return;
     }
 }
 

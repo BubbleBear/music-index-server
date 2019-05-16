@@ -433,6 +433,8 @@ router.get('/download', async (ctx, next) => {
     return await next();
 });
 
+router.post('/config', async (ctx, next) => {});
+
 export default router;
 
 if (require.main === module) {

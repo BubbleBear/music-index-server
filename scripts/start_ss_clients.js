@@ -4,9 +4,13 @@ const Redis = require('ioredis');
 
 const REDIS_CONFIG_KEY = 'music.index.config';
 
-const config = process.argv[2] ? JSON.parse(process.argv[2]) : require('../config/export.json');
-
 const clientProsessPool = [];
+
+const redis = new Redis({
+    host: 'localhost',
+    port: 6379,
+    dropBufferSupport: true,
+});
 
 const subscriber = new Redis({
     host: 'localhost',
@@ -17,10 +21,19 @@ const subscriber = new Redis({
 subscriber.subscribe(REDIS_CONFIG_KEY);
 
 async function start(startPort = 7777) {
+    let config;
+    const confStr = await redis.get(REDIS_CONFIG_KEY);
+
+    if (confStr) {
+        config = JSON.parse(confStr).ssclient;
+    } else {
+        try {
+            config = require('../config/export.json');
+        } catch (e) {}
+    }
+
     const serverList = config.configs;
     let port = startPort;
-
-    // console.log(serverList)
 
     for (const server of serverList) {
         let retry = 3;
@@ -32,14 +45,14 @@ async function start(startPort = 7777) {
 
                 await new Promise((resolve, reject) => {
                     ssp.stdout.on('data', (chunk) => {
-                        chunk && console.log(chunk.toString());
+                        // chunk && console.log(chunk.toString());
                         resolve();
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
-                        console.log('############ error ############')
-                        chunk && console.log(chunk.toString());
-                        console.log('############ error ############')
+                        // console.log('############ error ############')
+                        // chunk && console.log(chunk.toString());
+                        // console.log('############ error ############')
                         reject();
                     });
                 });
@@ -86,7 +99,6 @@ if (require.main === module) {
         setInterval(async () => {
             await stop();
             await start();
-            console.log(clientProsessPool.length)
         }, process.argv[2] || 5 * 60 * 1000);
 
         false && subscriber.on('message', async (channel, message) => {
