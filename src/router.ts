@@ -452,6 +452,26 @@ router.get('/config', async (ctx, next) => {
     return await next();
 });
 
+router.post('/config/:key', async (ctx, next) => {
+    const files = ctx.request.files || {};
+    const params = ctx.params;
+
+    const filename = Object.keys(files)[0];
+    const file = files[filename];
+    const contentStr = await util.promisify(fs.readFile)(file.path, {
+        encoding: 'utf8',
+    });
+    const content = JSON.parse(contentStr);
+
+    await ctx.service.updateConfig(params.key, content);
+
+    ctx.body = {
+        success: true,
+    };
+
+    return await next();
+});
+
 router.post('/config', async (ctx, next) => {
     const files = ctx.request.files || {};
 
