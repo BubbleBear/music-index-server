@@ -453,42 +453,78 @@ router.get('/config', async (ctx, next) => {
 });
 
 router.post('/config/:key', async (ctx, next) => {
-    const files = ctx.request.files || {};
+    const files = ctx.request.files;
     const params = ctx.params;
 
-    const filename = Object.keys(files)[0];
-    const file = files[filename];
-    const contentStr = await util.promisify(fs.readFile)(file.path, {
-        encoding: 'utf8',
-    });
-    const content = JSON.parse(contentStr);
+    try {
+        const filename = Object.keys(files!)[0];
+        const file = files![filename];
+        const contentStr = await util.promisify(fs.readFile)(file.path, {
+            encoding: 'utf8',
+        });
+        const content = JSON.parse(contentStr);
 
-    await ctx.service.updateConfig(params.key, content);
+        await ctx.service.updateConfig(params.key, content);
 
-    ctx.body = {
-        success: true,
-    };
+        ctx.body = {
+            success: true,
+        };
+    } catch (e) {
+        ctx.body = {
+            success: false,
+            message: e.message,
+        };
+    }
+
+    return await next();
+});
+
+router.post('/config/:key/json', async (ctx, next) => {
+    const body = ctx.request.body;
+    const params = ctx.params;
+
+    const content = body;
+
+    try {
+        await ctx.service.updateConfig(params.key, content);
+
+        ctx.body = {
+            success: true,
+        };
+    } catch (e) {
+        ctx.body = {
+            success: false,
+            message: e.message,
+        };
+    }
 
     return await next();
 });
 
 router.post('/configs', async (ctx, next) => {
-    const files = ctx.request.files || {};
+    const files = ctx.request.files;
 
-    const filename = Object.keys(files)[0];
-    const file = files[filename];
-    const contentStr = await util.promisify(fs.readFile)(file.path, {
-        encoding: 'utf8',
-    });
-    const content = JSON.parse(contentStr);
+    try {
+        const filename = Object.keys(files!)[0];
+        const file = files![filename];
+        const contentStr = await util.promisify(fs.readFile)(file.path, {
+            encoding: 'utf8',
+        });
+        const content = JSON.parse(contentStr);
 
-    for (const key in content) {
-        await ctx.service.updateConfig(key as any, content[key]);
+        for (const key in content) {
+            await ctx.service.updateConfig(key as any, content[key]);
+        }
+
+        ctx.body = {
+            success: true,
+        };
+    } catch (e) {
+        ctx.body = {
+            success: false,
+            message: e.message,
+        };
     }
-
-    ctx.body = {
-        success: true,
-    };
 
     return await next();
 });
