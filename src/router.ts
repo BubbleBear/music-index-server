@@ -472,7 +472,7 @@ router.post('/config/:key', async (ctx, next) => {
     return await next();
 });
 
-router.post('/config', async (ctx, next) => {
+router.post('/configs', async (ctx, next) => {
     const files = ctx.request.files || {};
 
     const filename = Object.keys(files)[0];
