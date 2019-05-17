@@ -220,15 +220,15 @@ export class Gatherer {
         }
     }
 
-    public async retry(tag: keyof typeof Adapters, searchOptions: SearchOptions, initProxy?: string, times: number = 3) {
-        let proxy = initProxy || (this.domestics[tag] ? await this.domesticProxyPool.get() : 
-            this.foreign[tag] ? await this.foreignProxyPool.get() : undefined);
+    public async retry(channel: keyof typeof Adapters, searchOptions: SearchOptions, initProxy?: string, times: number = 3) {
+        let proxy = initProxy || (this.domestics[channel] ? await this.domesticProxyPool.get() : 
+            this.foreign[channel] ? await this.foreignProxyPool.get() : undefined);
 
         const errors = [];
 
         while (times--) {
             try {
-                const adapter = new Adapters[tag]({
+                const adapter = new Adapters[channel]({
                     proxy,
                 });
 
@@ -239,7 +239,8 @@ export class Gatherer {
                 warn({
                     module: 'music-info-gatherer',
                     function: 'retry',
-                    adapter: tag,
+                    channel,
+                    proxy,
                     time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                     error: {
                         message: e.message,
@@ -247,8 +248,8 @@ export class Gatherer {
                     },
                 });
 
-                this.domestics[tag] && (proxy = await this.domesticProxyPool.get(true));
-                this.foreign[tag] && (proxy = await this.foreignProxyPool.get());
+                this.domestics[channel] && (proxy = await this.domesticProxyPool.get(true));
+                this.foreign[channel] && (proxy = await this.foreignProxyPool.get());
             }
         }
 
@@ -256,7 +257,8 @@ export class Gatherer {
             error({
                 module: 'music-info-gatherer',
                 function: 'retry',
-                adapter: tag,
+                channel,
+                proxy,
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 errors,
             });

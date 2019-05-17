@@ -457,14 +457,14 @@ router.post('/config', async (ctx, next) => {
 
     const filename = Object.keys(files)[0];
     const file = files[filename];
-    const content = await util.promisify(fs.readFile)(file.path, {
+    const contentStr = await util.promisify(fs.readFile)(file.path, {
         encoding: 'utf8',
     });
+    const content = JSON.parse(contentStr);
 
-    await Promise.all(Object.keys(content).map(async (v: any) => {
-        console.log(v, content[v]);
-        await ctx.service.updateConfig(v, content[v]);
-    }));
+    for (const key in content) {
+        await ctx.service.updateConfig(key as any, content[key]);
+    }
 
     ctx.body = {
         success: true,
