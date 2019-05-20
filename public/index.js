@@ -1,4 +1,4 @@
-var host = 'http://192.168.11.166:3000'
+var host = ''
 var domestics = []
 function ctrlLoading(isShow) {
   if (isShow) document.getElementById('loading').style.display = 'block'
