@@ -1,62 +1,98 @@
 import redis from './connection/redis';
+import subscriber from './connection/subscriber';
 
 const REDIS_PREFIX = 'dist-con-limit:';
+
+let DEBUG = false;
+
+export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
+    const atomChannel = `${REDIS_PREFIX}atom:${domain}`;
+    const lock = await redis.setnx(domain, true);
+
+    if (lock) {
+        DEBUG && console.log('lock in: ', domain, ' : ', lock);
+        await fn();
+        DEBUG && console.log('lock out: ', domain, ' : ', lock);
+        await redis.del(domain);
+
+        await redis.publish(atomChannel, 'lock freed');
+
+        return true;
+    }
+
+    subscriber.subscribe(atomChannel);
+
+    return await new Promise(async (resolve) => {
+        subscriber.once('message', (channel, message) => {
+            if (channel === atomChannel && message === 'lock freed') {
+                resolve(false);
+            }
+        });
+    });
+}
+
+export async function cleanUp() {
+    const keys = await redis.keys(`${REDIS_PREFIX}*`);
+
+    return await Promise.all(keys.map(async key => {
+        return await redis.del(key);
+    }));
+}
 
 export default function wrapper(concurrency: number, domain: string) {
     const REDIS_DOMAIN = `${REDIS_PREFIX}${domain}`;
     const REDIS_LOCK = `${REDIS_DOMAIN}:lock`;
     const REDIS_COUNT = `${REDIS_DOMAIN}:count`;
 
+    subscriber.subscribe(REDIS_DOMAIN);
+
+    subscriber.on('message', async (channel, message) => {
+        if (channel === REDIS_DOMAIN && message === 'decr') {
+            while (!await atom(REDIS_LOCK, async () => {
+                DEBUG && console.log(await count(), queue.length);
+                if (await count() < concurrency && queue.length > 0) {
+                    await schedule();
+                }
+            })) {};
+        }
+    });
+
     const queue: ReturnType<typeof exec.bind>[] = [];
 
-    const init = redis.del(REDIS_COUNT);
-
-    async function atom(fn: (...args: any) => Promise<any>) {
-        await init;
-
-        const lock = await redis.setnx(REDIS_LOCK, true);
-        await redis.expire(REDIS_LOCK, 60);
-
-        if (lock) {
-            await fn();
-        }
-
-        await redis.del(REDIS_LOCK);
-
-        return !!lock;
-    }
+    // const init = redis.del(REDIS_COUNT);
 
     async function incr() {
         return await redis.incr(REDIS_COUNT);
     }
 
     async function decr() {
-        return await redis.decr(REDIS_COUNT);
+        const result = await redis.decr(REDIS_COUNT);
+
+        await redis.publish(REDIS_DOMAIN, 'decr');
+
+        return result;
     }
 
     async function count() {
-        await init;
-
         return Number(await redis.get(REDIS_COUNT)) || 0;
     }
 
     async function schedule() {
-        await decr();
-
         const next = queue.shift();
-        next && next();
+        next && await next();
     }
 
     async function exec(resolve: (value: any) => void, fn: () => Promise<any>) {
-        while (!await atom(async () => {
+        while (!await atom(REDIS_LOCK, async () => {
             if (await count() < concurrency) {
                 await incr();
-    
-                const result = fn().catch((error) => error);
+
+                const result = await fn().catch((error) => error);
         
                 resolve(result);
         
-                result.then(schedule);
+                await decr();
+                await schedule();
             } else {
                 queue.push(exec.bind(null, resolve, fn));
             }
@@ -74,23 +110,59 @@ export default function wrapper(concurrency: number, domain: string) {
 
 if (require.main === module) {
     !async function() {
-        const arr = Array(10).fill(0);
+        const arr = Array(5).fill(0);
 
         const limit = wrapper(2, 'test');
+        const limit1 = wrapper(2, 'test');
 
         async function test() {
-            await Promise.all(arr.map((_, i) => {
-                return limit(async () => {
+            let a: any;
+            DEBUG = true;
+
+            a = arr.map(async (_, i) => {
+                let r;
+
+                while (r = await atom('test', async () => {
                     return await new Promise(resolve => {
                         setTimeout(() => {
                             console.log(i);
                             resolve();
                         }, 1000);
                     });
-                });
-            }));
+                }), !r) {
+                };
+
+                return r;
+            });
+
+            // a = [
+            //     Promise.all(arr.map((_, i) => {
+            //         return limit(async () => {
+            //             return await new Promise(resolve => {
+            //                 setTimeout(() => {
+            //                     console.log('0: ', i);
+            //                     resolve();
+            //                 }, 1000);
+            //             });
+            //         });
+            //     })),
+            //     Promise.all(arr.map(async (_, i) => {
+            //         return limit1(async () => {
+            //             return await new Promise(resolve => {
+            //                 setTimeout(() => {
+            //                     console.log('1: ', i);
+            //                     resolve();
+            //                 }, 1000);
+            //             });
+            //         });
+            //     })),
+            // ];
+
+            await Promise.all(a);
         }
 
         await test();
+
+        console.log('done');
     }()
 }

@@ -1,9 +1,8 @@
 import * as emitter from 'events';
 import * as path from 'path';
 
-import Redis from 'ioredis';
-
 import redis from './connection/redis';
+import subscriber from './connection/subscriber';
 
 const REDIS_CONFIG_KEY = 'music.index.config';
 
@@ -20,8 +19,6 @@ export interface Config {
 };
 
 export class Config extends emitter.EventEmitter {
-    private subscriber: Redis.Redis;
-
     private _config?: Config;
 
     public _init: Promise<void>;
@@ -33,17 +30,9 @@ export class Config extends emitter.EventEmitter {
     constructor(defaultConfigDir = path.join(__dirname, '../config')) {
         super();
 
-        this.subscriber = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
-        
-        this.subscriber.subscribe(REDIS_CONFIG_KEY);
+        subscriber.subscribe(REDIS_CONFIG_KEY);
 
-        this.subscriber.on('message', async (channel, message) => {
-            console.log(channel, message);
-            
+        subscriber.on('message', async (channel, message) => {
             if (channel === REDIS_CONFIG_KEY) {
                 await this.pull();
             }

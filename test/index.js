@@ -1,9 +1,12 @@
-const fs = require('fs');
+const Redis = require('ioredis');
 
-try {
-    fs.mkdirSync('asdf', {
-        recursive: true,
-    });
-} catch (e) {
-    console.log(e);
-}
+const redis = new Redis({
+    host: 'localhost',
+    port: 6379,
+    dropBufferSupport: true,
+});
+
+!async function() {
+    const k = await redis.keys('dist-con-limit:*')
+    console.log(k)
+}()
