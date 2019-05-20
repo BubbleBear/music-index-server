@@ -1,12 +1,12 @@
 import redis from './connection/redis';
-import Redis from 'ioredis';
+import subscriber from './connection/subscriber';
 
 const REDIS_PREFIX = 'dist-con-limit:';
 
 let DEBUG = false;
 
 export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
-    const channel = `${REDIS_PREFIX}atom:${domain}`;
+    const atomChannel = `${REDIS_PREFIX}atom:${domain}`;
     const lock = await redis.setnx(domain, true);
 
     if (lock) {
@@ -15,22 +15,16 @@ export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
         DEBUG && console.log('lock out: ', domain, ' : ', lock);
         await redis.del(domain);
 
-        await redis.publish(channel, 'ready');
+        await redis.publish(atomChannel, 'lock freed');
 
         return true;
     }
 
-    const subscriber = new Redis({
-        host: 'localhost',
-        port: 6379,
-        dropBufferSupport: true,
-    });
-
-    subscriber.subscribe(channel);
+    subscriber.subscribe(atomChannel);
 
     return await new Promise(async (resolve) => {
         subscriber.once('message', (channel, message) => {
-            if (message === 'ready') {
+            if (channel === atomChannel && message === 'lock freed') {
                 resolve(false);
             }
         });
@@ -50,16 +44,10 @@ export default function wrapper(concurrency: number, domain: string) {
     const REDIS_LOCK = `${REDIS_DOMAIN}:lock`;
     const REDIS_COUNT = `${REDIS_DOMAIN}:count`;
 
-    const subscriber = new Redis({
-        host: 'localhost',
-        port: 6379,
-        dropBufferSupport: true,
-    });
-
     subscriber.subscribe(REDIS_DOMAIN);
 
     subscriber.on('message', async (channel, message) => {
-        if (message === 'decr') {
+        if (channel === REDIS_DOMAIN && message === 'decr') {
             while (!await atom(REDIS_LOCK, async () => {
                 DEBUG && console.log(await count(), queue.length);
                 if (await count() < concurrency && queue.length > 0) {

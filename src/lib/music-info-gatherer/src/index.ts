@@ -2,7 +2,6 @@ import * as emitter from 'events';
 
 import moment from 'moment';
 import axios from 'axios';
-import Redis from 'ioredis';
 import AsyncLock from 'async-lock';
 import puppeteer from 'puppeteer';
 
@@ -17,6 +16,7 @@ import { info, warn, error } from './logger';
 import ProxyPool from './proxy_pool';
 import BrowserPool from './browser_pool';
 import { Config } from '../../../config';
+import redis from '../../../connection/redis';
 
 const lock = new AsyncLock();
 
@@ -68,16 +68,8 @@ export class Gatherer {
 
     public foreignProxyPool: ProxyPool;
 
-    public redis: Redis.Redis;
-
     constructor() {
         const gatherer = this;
-
-        this.redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
 
         this.domesticProxyPool = new ProxyPool({
             name: 'domesticProxyPool',
@@ -144,16 +136,16 @@ export class Gatherer {
 
                 const size = proxies.length;
 
-                let next = Number(await gatherer.redis.get('proxy#foreignProxyPool#next')) % size;
-                await gatherer.redis.setex('proxy#foreignProxyPool#next', 300, (next + 1) % size);
+                let next = Number(await redis.get('proxy#foreignProxyPool#next')) % size;
+                await redis.setex('proxy#foreignProxyPool#next', 300, (next + 1) % size);
 
                 await new Promise((resolve, reject) => {
                     lock.acquire('foreign', async (cb) => {
-                        let available = await gatherer.redis.get(`${availableKey}#${next}`);
+                        let available = await redis.get(`${availableKey}#${next}`);
 
                         while (available !== null) {
                             next = (next + 1) % size;
-                            available = await gatherer.redis.get(`${availableKey}#${next}`);
+                            available = await redis.get(`${availableKey}#${next}`);
 
                             await new Promise((resolve, reject) => {
                                 setTimeout(() => {
@@ -162,8 +154,8 @@ export class Gatherer {
                             });
                         }
 
-                        await gatherer.redis.set(`${availableKey}#${next}`, '');
-                        await gatherer.redis.pexpire(`${availableKey}#${next}`, interval);
+                        await redis.set(`${availableKey}#${next}`, '');
+                        await redis.pexpire(`${availableKey}#${next}`, interval);
 
                         cb();
                     }, (err, ret) => {
@@ -406,7 +398,6 @@ if (require.main === module) {
         // await gatherer.screenshot('https://open.spotify.com/track/2vehaGr6bpERquj9fPgQk0', './y.png', 'spotify');
         await gatherer.screenshot('https://www.youtube.com/watch?v=rnavVgXmqdU', './y.png', 'youtube');
 
-        await gatherer.redis.disconnect();
         await gatherer.domesticProxyPool.destroy();
         await gatherer.foreignProxyPool.destroy();
     }()

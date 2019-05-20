@@ -1,4 +1,4 @@
-import Redis from 'ioredis';
+import redis from '../../../connection/redis';
 
 const REDIS_PROXY_PREFIX = 'proxy#';
 
@@ -12,20 +12,12 @@ export interface ProxyPoolOptions {
 export default class ProxyPool {
     private name!: string;
 
-    private redis: Redis.Redis;
-
     private timeout?: number;
 
     private strategy!: 'manual' | 'rotate';
 
     constructor(options: ProxyPoolOptions) {
         this.destructureOptions(options);
-
-        this.redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
     }
 
     public async get(options?: any) {
@@ -33,15 +25,15 @@ export default class ProxyPool {
     }
 
     public async manual(refresh: boolean = false) {
-        let buffered: string | null | undefined = await this.redis.get(`${REDIS_PROXY_PREFIX}${this.name}`);
+        let buffered: string | null | undefined = await redis.get(`${REDIS_PROXY_PREFIX}${this.name}`);
 
         if (buffered === null || refresh === true) {
             buffered = await this._get();
 
             if (this.timeout) {
-                await this.redis.setex(`${REDIS_PROXY_PREFIX}${this.name}`, this.timeout, buffered);
+                await redis.setex(`${REDIS_PROXY_PREFIX}${this.name}`, this.timeout, buffered);
             } else {
-                await this.redis.set(`${REDIS_PROXY_PREFIX}${this.name}`, buffered);
+                await redis.set(`${REDIS_PROXY_PREFIX}${this.name}`, buffered);
             }
         }
 
@@ -53,7 +45,7 @@ export default class ProxyPool {
     }
 
     public async destroy() {
-        return await this.redis.disconnect();
+        return await redis.disconnect();
     }
 
     private async _get(): Promise<string | undefined> {
@@ -74,18 +66,5 @@ export default class ProxyPool {
 
 if (require.main === module) {
     !async function() {
-        const redis = new Redis({
-            host: 'localhost',
-            port: 6379,
-            dropBufferSupport: true,
-        });
-
-        await redis.setex('test', 10, null);
-
-        const test = await redis.get('test');
-
-        console.log(test)
-
-        await redis.disconnect();
     }()
 }
