@@ -23,11 +23,15 @@ export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
     subscriber.subscribe(atomChannel);
 
     return await new Promise(async (resolve) => {
-        subscriber.once('message', (channel, message) => {
+        const cb = function (channel: string, message: string) {
             if (channel === atomChannel && message === 'lock freed') {
                 resolve(false);
+
+                subscriber.removeListener('message', cb);
             }
-        });
+        }
+
+        subscriber.on('message', cb);
     });
 }
 
@@ -110,58 +114,62 @@ export default function wrapper(concurrency: number, domain: string) {
 
 if (require.main === module) {
     !async function() {
-        const arr = Array(5).fill(0);
+        const arr = Array(4).fill(0);
 
         const limit = wrapper(2, 'test');
         const limit1 = wrapper(2, 'test');
 
         async function test() {
             let a: any;
-            DEBUG = true;
+            DEBUG = false;
 
-            a = arr.map(async (_, i) => {
-                let r;
+            // a = arr.map(async (_, i) => {
+            //     let r;
 
-                while (r = await atom('test', async () => {
-                    return await new Promise(resolve => {
-                        setTimeout(() => {
-                            console.log(i);
-                            resolve();
-                        }, 1000);
+            //     while (r = await atom('test', async () => {
+            //         return await new Promise(resolve => {
+            //             setTimeout(() => {
+            //                 console.log(i);
+            //                 resolve();
+            //             }, 1000);
+            //         });
+            //     }), !r) {
+            //     };
+
+            //     return r;
+            // });
+
+            a = [
+                Promise.all(arr.map((_, i) => {
+                    return limit(async () => {
+                        return await new Promise(resolve => {
+                            setTimeout(() => {
+                                console.log('0: ', i);
+                                resolve();
+                            }, 1000);
+                        });
                     });
-                }), !r) {
-                };
-
-                return r;
-            });
-
-            // a = [
-            //     Promise.all(arr.map((_, i) => {
-            //         return limit(async () => {
-            //             return await new Promise(resolve => {
-            //                 setTimeout(() => {
-            //                     console.log('0: ', i);
-            //                     resolve();
-            //                 }, 1000);
-            //             });
-            //         });
-            //     })),
-            //     Promise.all(arr.map(async (_, i) => {
-            //         return limit1(async () => {
-            //             return await new Promise(resolve => {
-            //                 setTimeout(() => {
-            //                     console.log('1: ', i);
-            //                     resolve();
-            //                 }, 1000);
-            //             });
-            //         });
-            //     })),
-            // ];
+                })),
+                Promise.all(arr.map(async (_, i) => {
+                    return limit1(async () => {
+                        return await new Promise(resolve => {
+                            setTimeout(() => {
+                                console.log('1: ', i);
+                                resolve();
+                            }, 1000);
+                        });
+                    });
+                })),
+            ];
 
             await Promise.all(a);
         }
 
         await test();
+
+        process.nextTick(() => {
+            console.log(subscriber.listeners('message'));
+        })
 
         console.log('done');
     }()
