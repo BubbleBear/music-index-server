@@ -6,25 +6,24 @@ const REDIS_PREFIX = 'dist-con-limit:';
 let DEBUG = false;
 
 export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
-    const atomChannel = `${REDIS_PREFIX}atom:${domain}`;
-    const lock = await redis.setnx(domain, true);
+    const ATOM_DOMAIN = `${REDIS_PREFIX}atom:${domain}`;
+    const lock = await redis.setnx(ATOM_DOMAIN, true);
 
     if (lock) {
-        DEBUG && console.log('lock in: ', domain, ' : ', lock);
         await fn();
-        DEBUG && console.log('lock out: ', domain, ' : ', lock);
-        await redis.del(domain);
-
-        await redis.publish(atomChannel, 'lock freed');
+        await redis.del(ATOM_DOMAIN);
+        await redis.publish(ATOM_DOMAIN, 'lock freed');
 
         return true;
     }
 
-    subscriber.subscribe(atomChannel);
+    subscriber.subscribe(ATOM_DOMAIN);
+
+    subscriber.setMaxListeners(50);
 
     return await new Promise(async (resolve) => {
         const cb = function (channel: string, message: string) {
-            if (channel === atomChannel && message === 'lock freed') {
+            if (channel === ATOM_DOMAIN && message === 'lock freed') {
                 resolve(false);
 
                 subscriber.removeListener('message', cb);
@@ -52,12 +51,10 @@ export default function wrapper(concurrency: number, domain: string) {
 
     subscriber.on('message', async (channel, message) => {
         if (channel === REDIS_DOMAIN && message === 'decr') {
-            while (!await atom(REDIS_LOCK, async () => {
-                DEBUG && console.log(await count(), queue.length);
-                if (await count() < concurrency && queue.length > 0) {
-                    await schedule();
-                }
-            })) {};
+            DEBUG && console.log(await count(), queue.length);
+            if (queue.length > 0 && await count() < concurrency) {
+                await schedule();
+            }
         }
     });
 
@@ -87,16 +84,18 @@ export default function wrapper(concurrency: number, domain: string) {
     }
 
     async function exec(resolve: (value: any) => void, fn: () => Promise<any>) {
-        while (!await atom(REDIS_LOCK, async () => {
+        while (!await atom(REDIS_LOCK, async function e() {
             if (await count() < concurrency) {
                 await incr();
 
-                const result = await fn().catch((error) => error);
+                const result = fn().catch((error) => error);
         
                 resolve(result);
-        
-                await decr();
-                await schedule();
+
+                result.then(async () => {
+                    await schedule();
+                    await decr();
+                });
             } else {
                 queue.push(exec.bind(null, resolve, fn));
             }
@@ -114,14 +113,16 @@ export default function wrapper(concurrency: number, domain: string) {
 
 if (require.main === module) {
     !async function() {
-        const arr = Array(4).fill(0);
+        const arr = Array(5).fill(0);
 
-        const limit = wrapper(2, 'test');
-        const limit1 = wrapper(2, 'test');
+        const limit = wrapper(3, 'test');
+        const limit1 = wrapper(3, 'test');
+
+        await redis.del('dist-con-limit:atom:dist-con-limit:test:lock');
 
         async function test() {
             let a: any;
-            DEBUG = false;
+            // DEBUG = true;
 
             // a = arr.map(async (_, i) => {
             //     let r;
@@ -146,7 +147,7 @@ if (require.main === module) {
                             setTimeout(() => {
                                 console.log('0: ', i);
                                 resolve();
-                            }, 1000);
+                            }, 3000);
                         });
                     });
                 })),
@@ -156,7 +157,7 @@ if (require.main === module) {
                             setTimeout(() => {
                                 console.log('1: ', i);
                                 resolve();
-                            }, 1000);
+                            }, 3000);
                         });
                     });
                 })),
