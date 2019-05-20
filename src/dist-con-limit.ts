@@ -6,17 +6,35 @@ const REDIS_PREFIX = 'dist-con-limit:';
 let DEBUG = false;
 
 export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
-    const x = await redis.get(domain);
+    const channel = `dist-con-limit:atom:${domain}`;
     const lock = await redis.setnx(domain, true);
 
     if (lock) {
-        DEBUG && console.log('lock in: ', domain, ' : ', lock, 'x : ', x);
+        DEBUG && console.log('lock in: ', domain, ' : ', lock);
         await fn();
-        DEBUG && console.log('lock out: ', domain, ' : ', lock, 'x : ', x);
+        DEBUG && console.log('lock out: ', domain, ' : ', lock);
         await redis.del(domain);
+
+        await redis.publish(channel, 'ready');
+
+        return true;
     }
 
-    return !!lock;
+    const subscriber = new Redis({
+        host: 'localhost',
+        port: 6379,
+        dropBufferSupport: true,
+    });
+
+    subscriber.subscribe(channel);
+
+    return await new Promise(async (resolve) => {
+        subscriber.once('message', (channel, message) => {
+            if (message === 'ready') {
+                resolve(false);
+            }
+        });
+    });
 }
 
 export default function wrapper(concurrency: number, domain: string) {
@@ -110,13 +128,13 @@ if (require.main === module) {
 
                 while (r = await atom('test', async () => {
                     return await new Promise(resolve => {
-                        console.log('开始了');
                         setTimeout(() => {
                             console.log(i);
                             resolve();
                         }, 1000);
                     });
-                }), !r) {};
+                }), !r) {
+                };
 
                 return r;
             });
