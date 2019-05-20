@@ -6,219 +6,7 @@
   <title>数据获取</title>
   <meta name="renderer" content="webkit">
   <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
-  <style>
-    html {
-      font-family: "Helvetica Neue", Helvetica, PingFang, "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
-    }
-
-    body {
-      -webkit-overflow-scrolling: touch;
-      position: relative;
-    }
-
-    h1,
-    h2,
-    h3,
-    div,
-    ul,
-    li,
-    dl,
-    dt,
-    dd,
-    button,
-    input,
-    header,
-    main,
-    footer,
-    p,
-    button,
-    body {
-      padding: 0;
-      margin: 0;
-      -webkit-overflow-scrolling: touch;
-      outline: none;
-    }
-
-    ul li {
-      list-style: none;
-    }
-
-    header {
-      text-align: center;
-      height: 60px;
-      line-height: 60px;
-      font-size: 16px;
-      font-weight: bold;
-    }
-
-    .main-wrap {
-      display: flex;
-      justify-content: space-around
-    }
-
-    .column-warp {
-      flex-direction: column;
-    }
-
-    .main-wrap>div {
-      align-items: center;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      padding: 20px 0;
-    }
-
-    .title {
-      font-size: 16px;
-      color: #333;
-      font-weight: bold;
-      margin-bottom: 20px
-    }
-
-    .input-wrap {
-      font-size: 14px;
-      color: #333;
-      margin: 5px;
-      display: flex;
-      align-items: center;
-      margin-bottom: 10px;
-    }
-
-    .input-wrap span {
-      margin-right: 4px;
-      width: 90px;
-    }
-
-    .input-wrap input {
-      height: 28px;
-      width: 160px;
-      line-height: 28px;
-      border-radius: 2px;
-      border: 1px #cdcdcd solid;
-      padding-left: 8px;
-    }
-
-    .left {
-      border-right: 1px #ccc solid;
-    }
-
-    .download {
-      width: 140px;
-      font-size: 14px;
-      height: 30px;
-      font-weight: bold;
-      border: 1px #cdcdcd solid;
-      background: #fcfcfc;
-      border-radius: 4px;
-      margin-top: 20px;
-      cursor: pointer;
-    }
-
-    .download:hover {
-      opacity: .5;
-    }
-
-    #loading {
-      width: 100%;
-      height: 100vh;
-      position: fixed;
-      display: none;
-      top: 0;
-      left: 0;
-      background: rgba(48, 47, 47, 0.7)
-    }
-
-    #loading svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      margin: auto;
-      width: 60px;
-      height: 60px;
-    }
-
-    #date-select {
-      height: 28px;
-      width: 160px;
-      line-height: 28px;
-      border-radius: 2px;
-      border: 1px #cdcdcd solid;
-    }
-
-    .table-warp {
-      padding-top: 0 !important;
-    }
-
-    .table-warp .song-name {
-      font-size: 18px;
-      color: #333;
-      font-weight: bold;
-    }
-
-    .table-warp .author {
-      font-size: 14px;
-      color: #999;
-    }
-
-    .table {
-      width: 400px;
-      display: flex;
-      max-height: 200px;
-      overflow-y: auto;
-      border: #9f9f9f 1px solid;
-      border-radius: 4px;
-    }
-
-    .table ul {
-      flex: 1
-    }
-
-    .table ul li {
-      white-space: nowrap;
-      padding: 4px;
-      border-left: #9f9f9f 1px solid;
-      border-bottom: #9f9f9f 1px solid;
-      text-align: center;
-      font-size: 14px;
-      height: 16px;
-      line-height: 16px;
-    }
-
-    .table ul li:last-child {
-      border-bottom: none
-    }
-
-    .table-title {
-      font-weight: bold;
-    }
-
-    .table .index-warp li {
-      border-left: none;
-    }
-
-    .placeholder-block {
-      height: 40px
-    }
-
-    #track-list {
-      margin: 0 auto;
-    }
-
-    .operation-warp {
-      /* border-left: #9f9f9f 1px solid; */
-    }
-
-    .operation-warp button {
-      width: 60px;
-      font-size: 12px;
-      border-radius: 4px;
-      background: #fff;
-      display: block;
-      margin: 0 auto;
-    }
-  </style>
+  <link rel="stylesheet" href="./style.css">
 </head>
 
 <body>
@@ -329,7 +117,7 @@
         <ul class="id-warp">
           <li class="table-title">公司ID</li>
         </ul>
-       
+
         <ul class="id-warp">
           <li class="table-title">公司名称</li>
         </ul>
@@ -366,6 +154,42 @@
       </div>
     </div>
   </div>
+  <div class="config-wrap">
+    <div class="title" style="text-align: center">基础配置</div>
+    <div class="upload-btn-wrap">
+      <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
+        xmlns="http://www.w3.org/2000/svg">
+        <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
+      <span class="tip">点击上传Shadowsocks配置文件</span>
+      <input type="file" accept=".json" id="config-upload">
+    </div>
+    <div class="tip">Shadowsocks配置文件导出方式：Shadowsocks图标右击 -> 服务器 -> 导出服务器全部配置</div>
+
+    <div class="config-list">
+      <div class="list-header">
+        <div>序号</div>
+        <div style="width:200px">代理名称</div>
+        <div>端口号</div>
+      </div>
+      <div class="list-main" id="ss-config-list">
+        <ul></ul>
+        <ul style="width:200px"></ul>
+        <ul></ul>
+      </div>
+    </div>
+    <div class="title" style="text-align: center">境内代理配置 <p id="push">追加</p>
+    </div>
+    <div class="config-list">
+      <div class="list-header">
+        <div style="width:300px">代理地址</div>
+        <div>操作</div>
+      </div>
+      <div class="list-main" id="domestics-config-list">
+        <ul style="width:300px;text-align: left" class="h"></ul>
+        <ul class="h"></ul>
+      </div>
+    </div>
+  </div>
   <div id="loading">
     <svg viewBox="0 0 38 38" xmlns="http://www.w3.org/2000/svg" stroke="#fff">
       <g fill="none" fill-rule="evenodd">
@@ -383,185 +207,6 @@
 </body>
 <script src="https://cdn.bootcss.com/moment.js/2.24.0/moment.min.js"></script>
 <script src="https://cdn.bootcss.com/axios/0.19.0-beta.1/axios.js"></script>
-<script>
-  var host = ''
-  function ctrlLoading(isShow) {
-    if (isShow) document.getElementById('loading').style.display = 'block'
-    else document.getElementById('loading').style.display = 'none'
-  }
-  function formatDownloadingTable() {
-    document.getElementById('downloading-table').innerHTML = '<ul class="index-warp"><li class="table-title"> 序号</li></ul><ul class="id-warp"><li class="table-title">公司ID</li></ul><ul class="id-warp"><li class="table-title">公司名称</li></ul><ul class="status-warp"><li class="table-title">状态</li></ul><ul class="operation-warp"><li class="table-title"> 操作</li></ul>'
-  }
-  function formatTrackList() {
-    document.getElementById('track-list').innerHTML = '<ul class="index-warp"><li class="table-title"></li><li>评论/播放</li><li>是否存在</li></ul><ul><li class="table-title">itunes</li><li>❌</li></ul><ul><li class="table-title">kkbox</li><li>❌</li></ul><ul><li class="table-title">spotify</li><li>❌</li></ul><ul><li class="table-title">youtube</li></ul><ul><li class="table-title">qq</li></ul><ul><li class="table-title">网易云</li></ul>'
-  }
-  function cancelDownloading(id) {
-    ctrlLoading(true)
-    window.axios.get(host + '/api/v1/cancel_downloading?company_id=' + id).then(function () {
-      ctrlLoading(false)
-      window.alert('取消成功')
-      getDownloadList()
-      getFileList()
-    }).catch(function (err) {
-      ctrlLoading(false)
-      console.log(err)
-    })
-  }
-  function getFileList() {
-    window.axios.get(host + '/api/v1/list_files').then(res => {
-      document.getElementById('file-list-count').innerHTML = '总数:' + res.data.data.length
-      if (res.data.data.length) {
-        var fileList = document.getElementById('file-list')
-        document.getElementById('file-list').innerHTML = '<ul class="index-warp"><li class="table-title">序号</li></ul><ul class="id-warp"><li class="table-title">公司ID</li></ul><ul class="name-warp"><li class="table-title">公司名称</li></ul><ul class="status-warp"><li class="table-title">状态</li></ul><ul class="other-warp"><li class="table-title">操作</li></ul>'
-        res.data.data.forEach(function (value, i) {
-          var index = document.createElement('li')
-          var id = document.createElement('li')
-          var name = document.createElement('li')
-          var downloadWarp = document.createElement('li')
-          var download = document.createElement('a')
-          index.innerHTML = i + 1
-          id.innerHTML = value.company_id
-          name.innerHTML = value.name
-          download.href = host + '/api/v1/download?filename=' + value.company_id
-          download.innerHTML = '下载'
-          downloadWarp.append(download)
-          fileList.children[0].append(index)
-          fileList.children[1].append(id)
-          fileList.children[2].append(name)
-          fileList.children[3].innerHTML += ('<li>已完成</li>')
-          fileList.children[4].append(downloadWarp)
-        })
-      } else document.getElementById('file-list').style.display = 'none'
-    }).catch(function (err) {
-      console.log(err)
-    })
-  }
-  function creatTrackList(data) {
-    formatTrackList()
-    var table = document.getElementById('track-list')
-    document.getElementById('track-list-warp').style.display = 'block'
-    table.children[1].innerHTML += (data.itunes && data.itunes.name ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[2].innerHTML += (data.kkbox && data.kkbox.name ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[3].innerHTML += (data.spotify && data.spotify.name ? '<li>✔️</li>' : '<li>❌</li>')
-    table.children[4].innerHTML += (data.youtube && data.youtube.name ? '<li>' + data.youtube.views + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
-    table.children[5].innerHTML += (data.qq && data.qq.name ? '<li>' + data.qq.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
-    table.children[6].innerHTML += (data.netease && data.netease.name ? '<li>' + data.netease.comments + '</li><li>✔️</li>' : '<li>❌</li><li>❌</li>')
-  }
-  function getDownloadList() {
-    ctrlLoading(true)
-    window.axios.get(host + '/api/v1/list_downloading').then(res => {
-      document.getElementById('downloading-count').innerHTML = '正在进行的查询总数:' + res.data.data.length
-      if (res.data.data.length) {
-        formatDownloadingTable()
-        document.getElementById('downloading-table').style.display = 'flex'
-        res.data.data.forEach(function (value, i) {
-          var downloadingTable = document.getElementById('downloading-table')
-          var index = document.createElement('li')
-          var name = document.createElement('li')
-          index.innerHTML = i + 1
-          name.innerHTML = value.name
-          var id = document.createElement('li')
-          var buttonLi = document.createElement('li')
-          var button = document.createElement('button')
-          button.innerHTML = '取消'
-          button.onclick = cancelDownloading.bind(this, value.company_id)
-          buttonLi.append(button)
-          id.innerHTML = value.company_id
-          downloadingTable.children[0].append(index)
-          downloadingTable.children[1].append(id)
-          downloadingTable.children[2].append(name)
-          downloadingTable.children[3].innerHTML += '<li>下载中</li>'
-          downloadingTable.children[4].append(buttonLi)
-        })
-      } else document.getElementById('downloading-table').style.display = 'none'
-      ctrlLoading(false)
-    }).catch(function (err) {
-      ctrlLoading(false)
-      console.log(err)
-    })
-  }
-  function createTask(id) {
-    ctrlLoading(true)
-    var url = host + '/api/v1/get_tracks?company_id=' + id
-    if (document.getElementById('screenshot').checked) url += '&screenshot=true'
-    window.axios.get(url).then(function (res) {
-      ctrlLoading(false)
-      document.getElementById('create-track-id').value = ''
-      getDownloadList()
-      getFileList()
-    }).catch((err) => {
-      ctrlLoading(false)
-      console.log(err)
-    })
-  }
-  function getDateOptions() {
-    ctrlLoading(true)
-    window.axios.get(host + '/api/v1/company_statistics/dates').then(res => {
-      ctrlLoading(false)
-      res.data.dates.forEach(function (data) {
-        var option = document.createElement('option')
-        console.log(option)
-        option.value = option.innerText = data
-        document.getElementById('date-select').append(option)
-      })
-    }).catch(err => {
-      ctrlLoading(false)
-      if (err.msg) window.alert(err.msg)
-      else window.alert('获取时间列表失败')
-    })
-  }
-  getDateOptions()
-  getFileList()
-  getDownloadList()
-  function downloadCsv(url) {
-    var a = document.createElement('a')
-    a.href = url
-    a.click()
-  }
-  function downloadMD() {
-    var ipt = document.getElementById('c-id')
-    if (!ipt.value) return window.alert('请输入公司ID')
-    ctrlLoading(true)
-    downloadCsv('/api/v1/csv/music_index_detail/' + ipt.value)
-    ipt.value = ''
-    ctrlLoading(false)
-  }
-  function formatTimeHorizon(value) {
-    var arr = [30, 90, 180, 365]
-    if (arr.indexOf(Number(value)) > -1) {
-      return [window.moment().startOf('day').subtract(value, 'day'), window.moment().endOf('day')]
-    } else return [window.moment(value), window.moment(value).endOf('day')]
-  }
-  function downloadDL() {
-    if (document.getElementById('date-select').value === 'none') return window.alert('请选择日期')
-    var timeHorizon = formatTimeHorizon(document.getElementById('date-select').value)
-    ctrlLoading(true)
-    downloadCsv('/api/v1/csv/company_statistics?start_date=' + timeHorizon[0].unix() + '&end_date=' + timeHorizon[1].unix())
-    ctrlLoading(false)
-  }
-  document.getElementById('dcb').onclick = downloadMD
-  document.getElementById('ddb').onclick = downloadDL
-
-  function getTrack(songName, artistName, albumName) {
-    ctrlLoading(true)
-    window.axios.get('/api/v1/get_track', { params: { song_name: songName, artist_name: artistName, album_name: albumName } }).then(function (res) {
-      ctrlLoading(false)
-      creatTrackList(res.data.data)
-      document.getElementById('song-name-data').innerHTML = songName
-      document.getElementById('artist-name-data').innerHTML = '作者：' + artistName
-    }).catch(function (err) {
-      console.log(err)
-      ctrlLoading(false)
-    })
-  }
-  document.getElementById('create-track').onclick = function () {
-    if (document.getElementById('create-track-id').value) return createTask(document.getElementById('create-track-id').value)
-    else window.alert('请输入公司ID')
-  }
-
-  document.getElementById('single-track').onclick = function () {
-    getTrack(document.querySelector('#song-name').value, document.querySelector('#artist-name').value, document.querySelector('#album-name').value)
-  }
-</script>
+<script src="./index.js"></script>
 
 </html>
