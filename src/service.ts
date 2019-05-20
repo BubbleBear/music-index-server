@@ -301,14 +301,23 @@ export default class Service {
             if (results[cur] !== null) {
                 acc[cur] = results[cur]!.filter((v) => {
 
-                    return normalizeString(v.name).includes(normalizeString(songName))
+                    // return normalizeString(v.name).includes(normalizeString(songName))
+                    //     && (
+                    //         normalizeString(v.name).includes(normalizeString(artistName))
+                    //         || v.artists.reduce((acc: boolean, cur) => {
+
+                    //             return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                    //         }, false)
+                    //         || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`))
+                    //     );
+                    return normalizeString(v.name) == normalizeString(songName)
                         && (
-                            normalizeString(v.name).includes(normalizeString(artistName))
+                            normalizeString(v.name) == normalizeString(artistName)
                             || v.artists.reduce((acc: boolean, cur) => {
 
-                                return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                                return acc || normalizeString(cur.name) == normalizeString(artistName);
                             }, false)
-                            || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`))
+                            || albumName && v.album.name && normalizeString(v.album.name) == normalizeString(`${albumName}`)
                         );
                 })[0] || {};
             } else {
