@@ -9,6 +9,7 @@ import cors from '@koa/cors';
 import Service from './service';
 import router from './router';
 import { info, warn, error } from './logger';
+import { cleanUp } from './dist-con-limit';
 
 process.setMaxListeners(20);
 
@@ -34,6 +35,8 @@ app
     }))
     .use(router.prefix('/api/v1').routes())
 
-app.listen(3000, () => {
-    console.log(`listening on port: 3000`);
+cleanUp().then(() => {
+    app.listen(3000, () => {
+        console.log(`listening on port: 3000`);
+    });
 });

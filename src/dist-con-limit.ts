@@ -6,7 +6,7 @@ const REDIS_PREFIX = 'dist-con-limit:';
 let DEBUG = false;
 
 export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
-    const channel = `dist-con-limit:atom:${domain}`;
+    const channel = `${REDIS_PREFIX}atom:${domain}`;
     const lock = await redis.setnx(domain, true);
 
     if (lock) {
@@ -35,6 +35,14 @@ export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
             }
         });
     });
+}
+
+export async function cleanUp() {
+    const keys = await redis.keys(`${REDIS_PREFIX}*`);
+
+    return await Promise.all(keys.map(async key => {
+        return await redis.del(key);
+    }));
 }
 
 export default function wrapper(concurrency: number, domain: string) {
