@@ -374,18 +374,24 @@ router.get('/get_tracks', async (ctx, next) => {
 });
 
 router.get('/list_files', async (ctx, next) => {
+    const companyIds = await ctx.service.listCachedFiles(); 
+    const companies = await ctx.service.findCompanies(companyIds.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+
     ctx.body = {
         success: true,
-        data: await ctx.service.listCachedFiles(),
+        data: companies,
     };
 
     return await next();
 });
 
 router.get('/list_downloading', async (ctx, next) => {
+    const companyIds = await ctx.service.listDownloadingFiles();
+    const companies = await ctx.service.findCompanies(companyIds.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+
     ctx.body = {
         success: true,
-        data: await ctx.service.listDownloadingFiles(),
+        data: companies,
     };
 
     return await next();

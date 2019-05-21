@@ -447,11 +447,9 @@ export default class Service {
     }
 
     public async listDownloadingFiles() {
-        const companyIds = await redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
+        const companyIds: string[] = await redis.smembers(REDIS_DOWNLOADING_STATUS_SET);
 
-        const companies = await this.findCompanies(companyIds, { _id: 0, company_id: 1, name: 1 });
-
-        return companies;
+        return companyIds;
     }
 
     public async cacheFile(redisKey: string, filepath: string) {
@@ -489,11 +487,9 @@ export default class Service {
     }
 
     public async listCachedFiles() {
-        const companyIds = await redis.hkeys(REDIS_CACHED_FILE_MAP);
+        const companyIds: string[] = await redis.hkeys(REDIS_CACHED_FILE_MAP);
 
-        const companies = await this.findCompanies(companyIds, { _id: 0, company_id: 1, name: 1 });
-
-        return companies;
+        return companyIds;
     }
 
     public async deleteCachedFile(redisKey: string) {

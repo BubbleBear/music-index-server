@@ -46,8 +46,6 @@ if (require.main === module) {
         while (await companyCursor.hasNext()) {
             const company = await companyCursor.next();
 
-            
-
             const albums = await db.collection('album').find({
                 album_id: {
                     $in: company.albumList.map(album => Number(album.album_id)),
