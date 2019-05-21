@@ -340,7 +340,7 @@ router.get('/get_tracks', async (ctx, next) => {
     return await next();
 });
 
-router.get('/screenshots', async (ctx, next) => {
+router.post('/screenshots', async (ctx, next) => {
     const files = ctx.request.files;
     const query = ctx.query;
 
