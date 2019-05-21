@@ -287,7 +287,7 @@ export default class Service {
         );
     }
 
-    public async searchTrack({ songName, artistName, albumName }: {
+    public async searchTrack({ songName, artistName, albumName, companyId }: {
             songName: string,
             artistName: string,
             platform?: string,
@@ -343,6 +343,16 @@ export default class Service {
                 )
             );
         }
+
+        global.info({
+            module: 'service',
+            method: 'searchTrack',
+            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+            songName,
+            artistName,
+            albumName,
+            companyId,
+        })
 
         console.log(songName, '#########', artistName, '#########', albumName);
 
