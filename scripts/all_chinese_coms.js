@@ -52,15 +52,11 @@ if (require.main === module) {
                 }).toArray();
 
                 albums.forEach(album => {
-                    if (isChinese(album.singername) || isChinese(album.name)) {
-                        ChineseComs.push(company);
-                    } else {
-                        album.list && album.list.forEach((track) => {
-                            if (isChinese(track.songname)) {
-                                ChineseComs.push(company);
-                            }
-                        });
-                    }
+                    album.list && album.list.forEach((track) => {
+                        if (isChinese(track.songname)) {
+                            ChineseComs.push(company);
+                        }
+                    });
                 });
             }
         }
