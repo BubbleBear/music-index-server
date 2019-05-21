@@ -13,10 +13,15 @@ import { Config } from './config';
 import redis from './connection/redis';
 import mongo from './connection/mongo';
 import limitWrapper from './dist-con-limit';
+import plimit from 'p-limit';
 
-const searchLimit = limitWrapper(10, 'search');
+// const searchLimit = limitWrapper(10, 'search');
 
-const screenshotLimit = limitWrapper(10, 'screenshot');
+// const screenshotLimit = limitWrapper(10, 'screenshot');
+
+const searchLimit = plimit(5);
+
+const screenshotLimit = plimit(5);
 
 // this is also referred in crawler script
 const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
