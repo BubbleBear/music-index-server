@@ -15,17 +15,15 @@ const redis = new Redis({
     dropBufferSupport: true,
 });
 
-const subscriber = new Redis({
-    host: 'localhost',
-    port: 6379,
-    dropBufferSupport: true,
-});
-
-subscriber.subscribe(REDIS_CONFIG_KEY);
-
 async function start(startPort = 7777) {
     let config;
     const confStr = await redis.get(REDIS_CONFIG_KEY);
+
+    logger.info({
+        module: 'scripts/ss',
+        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+        message: confStr,
+    });
 
     if (confStr) {
         config = JSON.parse(confStr).ssClient;
@@ -55,7 +53,7 @@ async function start(startPort = 7777) {
                             module: 'scripts/ss',
                             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                             desc: 'ss std output',
-                            message: chunk.toString(),
+                            message: chunk && chunk.toString() || '',
                         });
                     });
                 
@@ -66,7 +64,7 @@ async function start(startPort = 7777) {
                             module: 'scripts/ss',
                             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                             desc: 'ss error output',
-                            message: chunk.toString(),
+                            message: chunk && chunk.toString() || '',
                         });
                     });
                 });
@@ -111,6 +109,8 @@ async function stop() {
 
     await Promise.all(clientProsessPool.map(p => {
         return new Promise((resolve, reject) => {
+            p.removeAllListeners('close');
+
             p.on('close', (code, signal) => {
                 console.log(code, signal);
                 resolve();
@@ -121,8 +121,9 @@ async function stop() {
     clientProsessPool.splice(0, clientProsessPool.length);
 }
 
-process.on('beforeExit', async () => {
-    stop();
+process.on('SIGINT', async () => {
+    await stop();
+    process.exit(0);
 });
 
 if (require.main === module) {
@@ -133,12 +134,5 @@ if (require.main === module) {
             await stop();
             await start();
         }, process.argv[2] || 5 * 60 * 1000);
-
-        false && subscriber.on('message', async (channel, message) => {
-            if (channel === REDIS_CONFIG_KEY && message === 'ssclient') {
-                await stop();
-                await start();
-            }
-        });
     }()
 }

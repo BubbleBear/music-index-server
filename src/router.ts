@@ -345,16 +345,21 @@ router.post('/screenshots', async (ctx, next) => {
     const query = ctx.query;
 
     try {
-        const filename = Object.keys(files!)[0];
-        const file = files![filename];
-        const folder = path.join(__dirname, '../runtime', query.filename || filename);
+        const key = Object.keys(files!)[0];
+        const file = files![key];
+        const filename = query.filename || file.name;
+        const folder = path.join(__dirname, '../runtime', filename);
         const contentStr = await util.promisify(fs.readFile)(file.path, {
             encoding: 'utf8',
         });
 
-        await ctx.service.markDownloading(query.filename || filename);
+        await ctx.service.markDownloading(filename);
 
-        const list: any[] = contentStr.split(/[\r\n]+/);
+        await util.promisify(fs.mkdir)(folder, {
+            recursive: true,
+        });
+
+        const list: any[] = contentStr.split(/[\r\n]+/).slice(1);
 
         list.forEach((src, i) => {
             const values = src.split(',');
@@ -362,6 +367,7 @@ router.post('/screenshots', async (ctx, next) => {
                 albumName: values[0],
                 artistName: values[1],
                 songName: values[2],
+                taskGroup: filename,
             };
             list[i] = dist;
         });
@@ -396,9 +402,9 @@ router.post('/screenshots', async (ctx, next) => {
     
             await ctx.service.batchScreenshot(batchScreenshotOptions);
 
-            await ctx.service.cacheFile(query.filename || filename, folder);
+            await ctx.service.cacheFile(filename, folder);
 
-            await ctx.service.unmarkDownloading(query.filename || filename);
+            await ctx.service.unmarkDownloading(filename);
         })
 
         ctx.body = {
@@ -415,7 +421,7 @@ router.post('/screenshots', async (ctx, next) => {
 });
 
 router.get('/list_files', async (ctx, next) => {
-    const companyIds = await ctx.service.listCachedFiles(); 
+    const companyIds = await ctx.service.listCachedFiles();
     const companies = await ctx.service.findCompanies(companyIds.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
 
     ctx.body = {
@@ -441,7 +447,7 @@ router.get('/list_downloading', async (ctx, next) => {
 router.get('/cancel_downloading', async (ctx, next) => {
     const query = ctx.query;
 
-    await ctx.service.unmarkDownloading(query.filename)
+    await ctx.service.unmarkDownloading(query.filename);
 
     ctx.body = {
         success: true,
@@ -504,8 +510,8 @@ router.post('/config/:key', async (ctx, next) => {
     const params = ctx.params;
 
     try {
-        const filename = Object.keys(files!)[0];
-        const file = files![filename];
+        const key = Object.keys(files!)[0];
+        const file = files![key];
         const contentStr = await util.promisify(fs.readFile)(file.path, {
             encoding: 'utf8',
         });
@@ -552,8 +558,8 @@ router.post('/configs', async (ctx, next) => {
     const files = ctx.request.files;
 
     try {
-        const filename = Object.keys(files!)[0];
-        const file = files![filename];
+        const key = Object.keys(files!)[0];
+        const file = files![key];
         const contentStr = await util.promisify(fs.readFile)(file.path, {
             encoding: 'utf8',
         });
