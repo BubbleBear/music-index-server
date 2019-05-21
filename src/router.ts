@@ -219,8 +219,6 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const companyIds = [ query.company_id ];
 
-    const screenshot = !!query.screenshot;
-
     const downloading = await ctx.service.getDownloadingStatus(query.company_id);
 
     if (downloading) {
@@ -326,37 +324,6 @@ router.get('/get_tracks', async (ctx, next) => {
             }, [] as any[]);
 
             csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
-
-            if (screenshot) {
-                const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
-                    const d = cur.data;
-                    
-                    const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
-                        if (d[k] && d[k]!.url) {
-                            const url = d[k]!.url!;
-                            const filename = path.join(folder, `${cur.name}_${k}.png`);
-        
-                            return {
-                                url,
-                                path: filename,
-                                channel: k,
-                                companyId: query.company_id,
-                            };
-                        }
-                    }).filter((v): v is {
-                        url: string,
-                        path: string,
-                        channel: keyof typeof d,
-                        companyId: number,
-                    } => !!v);
-
-                    acc = acc.concat(part);
-
-                    return acc;
-                }, []);
-
-                await ctx.service.batchScreenshot(batchScreenshotOptions);
-            }
         }
 
         await ctx.service.cacheCSV(csv, path.join(folder, 'collection.csv'), query.company_id);
@@ -369,6 +336,62 @@ router.get('/get_tracks', async (ctx, next) => {
     ctx.body = {
         success: true,
     };
+
+    return await next();
+});
+
+router.get('/screenshots', async (ctx, next) => {
+    const files = ctx.request.files;
+    const query = ctx.query;
+
+    try {
+        const filename = Object.keys(files!)[0];
+        const file = files![filename];
+        const folder = path.join(__dirname, '../runtime', query.filename || filename);
+        const contentStr = await util.promisify(fs.readFile)(file.path, {
+            encoding: 'utf8',
+        });
+
+        const list = contentStr.split(/[\r\n(\r\n)]/)
+
+        // const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
+        //     const d = cur.data;
+            
+        //     const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
+        //         if (d[k] && d[k]!.url) {
+        //             const url = d[k]!.url!;
+        //             const filename = path.join(folder, `${cur.name}_${k}.png`);
+
+        //             return {
+        //                 url,
+        //                 path: filename,
+        //                 channel: k,
+        //                 companyId: query.company_id,
+        //             };
+        //         }
+        //     }).filter((v): v is {
+        //         url: string,
+        //         path: string,
+        //         channel: keyof typeof d,
+        //         companyId: number,
+        //     } => !!v);
+
+        //     acc = acc.concat(part);
+
+        //     return acc;
+        // }, []);
+
+        // await ctx.service.batchScreenshot(batchScreenshotOptions);
+
+        ctx.body = {
+            success: true,
+        }
+    } catch (e) {
+        ctx.body = {
+            success: false,
+            message: e.message,
+        };
+    }
 
     return await next();
 });

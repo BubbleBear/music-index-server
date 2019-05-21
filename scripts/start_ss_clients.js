@@ -1,6 +1,7 @@
 const cp = require('child_process');
 
 const Redis = require('ioredis');
+const moment = require('moment');
 
 const logger = require('./logger');
 
