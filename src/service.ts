@@ -267,14 +267,14 @@ export default class Service {
         artistName: string,
         channel?: string,
         albumName?: number | string,
-        companyId: number | string,
+        taskGroup: number | string,
     }[]) {
         return await Promise.all(
             options.map((option) => {
                 return searchLimit(async () => {
                     const status = 
-                        option.companyId
-                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
+                        option.taskGroup
+                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.taskGroup.toString())
                         : 0;
 
                     return {
@@ -547,14 +547,14 @@ export default class Service {
     }
 
     public async batchScreenshot(options: {
-        url: string, path: string, channel: string, companyId: number
+        url: string, path: string, channel: string, taskGroup: number | string
     }[]) {
         await Promise.all(
             options.map((option) => {
                 return screenshotLimit(async () => {
                     const status = 
-                        option.companyId
-                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.companyId.toString())
+                        option.taskGroup
+                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.taskGroup.toString())
                         : 0;
 
                     return status && await this.screenshot(option);

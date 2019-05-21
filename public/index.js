@@ -40,7 +40,7 @@ document.getElementById('push').onclick = function () {
 getConfig()
 function cancelDownloading(id) {
   ctrlLoading(true)
-  window.axios.get(host + '/api/v1/cancel_downloading?company_id=' + id).then(function () {
+  window.axios.get(host + '/api/v1/cancel_downloading?filename=' + id).then(function () {
     ctrlLoading(false)
     window.alert('取消成功')
     getDownloadList()

@@ -251,7 +251,7 @@ router.get('/get_tracks', async (ctx, next) => {
                     songName: track.songname,
                     artistName: s ? s.name : '',
                     albumName: album.name || undefined,
-                    companyId: company.company_id,
+                    taskGroup: company.company_id,
                 };
             });
 
@@ -352,36 +352,54 @@ router.get('/screenshots', async (ctx, next) => {
             encoding: 'utf8',
         });
 
-        const list = contentStr.split(/[\r\n(\r\n)]/)
+        await ctx.service.markDownloading(query.filename || filename);
 
-        // const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
-        //     const d = cur.data;
-            
-        //     const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
-        //         if (d[k] && d[k]!.url) {
-        //             const url = d[k]!.url!;
-        //             const filename = path.join(folder, `${cur.name}_${k}.png`);
+        const list: any[] = contentStr.split(/[\r\n]+/);
 
-        //             return {
-        //                 url,
-        //                 path: filename,
-        //                 channel: k,
-        //                 companyId: query.company_id,
-        //             };
-        //         }
-        //     }).filter((v): v is {
-        //         url: string,
-        //         path: string,
-        //         channel: keyof typeof d,
-        //         companyId: number,
-        //     } => !!v);
+        list.forEach((src, i) => {
+            const values = src.split(',');
+            const dist = {
+                albumName: values[0],
+                artistName: values[1],
+                songName: values[2],
+            };
+            list[i] = dist;
+        });
 
-        //     acc = acc.concat(part);
+        ctx.service.batchSearchTrack(list).then(async (result) => {
+            const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
+                const d = cur.data;
+                
+                const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
+                    if (d[k] && d[k]!.url) {
+                        const url = d[k]!.url!;
+                        const filename = path.join(folder, `${cur.name}_${k}.png`);
+    
+                        return {
+                            url,
+                            path: filename,
+                            channel: k,
+                            taskGroup: query.company_id,
+                        };
+                    }
+                }).filter((v): v is {
+                    url: string,
+                    path: string,
+                    channel: keyof typeof d,
+                    taskGroup: number | string,
+                } => !!v);
+    
+                acc = acc.concat(part);
+    
+                return acc;
+            }, []);
+    
+            await ctx.service.batchScreenshot(batchScreenshotOptions);
 
-        //     return acc;
-        // }, []);
+            await ctx.service.cacheFile(query.filename || filename, folder);
 
-        // await ctx.service.batchScreenshot(batchScreenshotOptions);
+            await ctx.service.unmarkDownloading(query.filename || filename);
+        })
 
         ctx.body = {
             success: true,
@@ -423,7 +441,7 @@ router.get('/list_downloading', async (ctx, next) => {
 router.get('/cancel_downloading', async (ctx, next) => {
     const query = ctx.query;
 
-    await ctx.service.unmarkDownloading(query.company_id)
+    await ctx.service.unmarkDownloading(query.filename)
 
     ctx.body = {
         success: true,
@@ -435,7 +453,7 @@ router.get('/cancel_downloading', async (ctx, next) => {
 router.get('/delete_cached_file', async (ctx, next) => {
     const query = ctx.query;
 
-    await ctx.service.deleteCachedFile(query.company_id);
+    await ctx.service.deleteCachedFile(query.filename);
 
     ctx.body = {
         success: true,
