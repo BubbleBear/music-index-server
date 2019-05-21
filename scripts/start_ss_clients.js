@@ -2,6 +2,8 @@ const cp = require('child_process');
 
 const Redis = require('ioredis');
 
+const logger = require('./logger');
+
 const REDIS_CONFIG_KEY = 'music.index.config';
 
 const clientProsessPool = [];
@@ -46,15 +48,25 @@ async function start(startPort = 7777) {
 
                 await new Promise((resolve, reject) => {
                     ssp.stdout.on('data', (chunk) => {
-                        chunk && console.log(chunk.toString());
                         resolve();
+
+                        logger.info({
+                            module: 'scripts/ss',
+                            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                            desc: 'ss std output',
+                            message: chunk.toString(),
+                        });
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
-                        console.log('############ error ############')
-                        chunk && console.log(chunk.toString());
-                        console.log('############ error ############')
                         reject();
+
+                        logger.warn({
+                            module: 'scripts/ss',
+                            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                            desc: 'ss error output',
+                            message: chunk.toString(),
+                        });
                     });
                 });
 
@@ -62,7 +74,15 @@ async function start(startPort = 7777) {
 
                 break;
             } catch (e) {
-                console.log(e);
+                logger.error({
+                    module: 'scripts/ss',
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                    desc: 'ss error',
+                    error: {
+                        message: e.message,
+                        stack: e.stack,
+                    },
+                });
             }
         }
     }

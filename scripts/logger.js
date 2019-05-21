@@ -7,7 +7,7 @@ const info = winston.createLogger({
         winston.format.json(),
     ),
     transports: [
-        new winston.transports.File({ filename: 'logs/qq_music_crawler/info.log', level: 'info' }),
+        new winston.transports.File({ filename: 'logs/scripts/info.log', level: 'info' }),
     ],
 });
 
@@ -18,7 +18,7 @@ const warn = winston.createLogger({
         winston.format.json(),
     ),
     transports: [
-        new winston.transports.File({ filename: 'logs/qq_music_crawler/warn.log', level: 'warn' }),
+        new winston.transports.File({ filename: 'logs/scripts/warn.log', level: 'warn' }),
     ],
 });
 
@@ -29,7 +29,7 @@ const error = winston.createLogger({
         winston.format.json(),
     ),
     transports: [
-        new winston.transports.File({ filename: 'logs/qq_music_crawler/error.log', level: 'error' }),
+        new winston.transports.File({ filename: 'logs/scripts/error.log', level: 'error' }),
     ],
 });
 

@@ -2,6 +2,17 @@ import puppeteer from 'puppeteer';
 
 process.setMaxListeners(20);
 
+process.on('SIGINT', async () => {
+    await Promise.all(instances.map(async instance => {
+        console.log('releasing browser resources');
+        await instance.sync();
+        await instance.destroy();
+        process.exit(0);
+    }));
+});
+
+const instances: BrowserPool[] = [];
+
 export interface BrowserPoolOptions {
     chromePath: string;
     proxies?: (string | undefined)[];
@@ -26,6 +37,8 @@ export default class BrowserPool {
                 headless: options.headless,
             });
         });
+
+        instances.push(this);
     }
 
     async sync() {

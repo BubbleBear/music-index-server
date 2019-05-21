@@ -18,6 +18,8 @@ global.info = info;
 global.warn = warn;
 global.error = error;
 
+const PORT = 3000;
+
 try {
     fs.mkdirSync(path.join(__dirname, '../runtime'));
 } catch (e) {}
@@ -37,16 +39,23 @@ app
     .use(router.prefix('/api/v1').routes())
 
 cleanUp()
+.then(() => {
+    return new Promise((resolve) => {
+        app.listen(PORT, () => {
+            resolve();
+            console.log(`listening on port: ${PORT}`);
+        });
+    });
+})
 .then(async () => {
     const service = new Service();
     const running = await service.listDownloadingFiles();
 
     await Promise.all(running.map(async (v) => {
         await service.unmarkDownloading(v);
+        await axios({
+            url: `http://localhost:${PORT}/api/v1/get_tracks?company_id=${v}`,
+        });
     }));
 })
-.then(() => {
-    app.listen(3000, () => {
-        console.log(`listening on port: 3000`);
-    });
-})
+
