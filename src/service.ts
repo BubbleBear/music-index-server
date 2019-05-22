@@ -24,15 +24,17 @@ const searchLimit = plimit(5);
 const screenshotLimit = plimit(5);
 
 // this is also referred in crawler script
-const REDIS_QQ_CRALWER_STATUS = 'qq.music.crawler.status';
+const REDIS_QQ_CRALWER_STATUS = 'qq.music:crawler:status';
 
-const REDIS_QQ_CRALWER_SET = 'qq.music.crawler.company';
+const REDIS_QQ_CRALWER_SET = 'qq.music:crawler:company';
 
-const REDIS_QQ_STATISTICS_SET = 'qq.music.statistics.date';
+const REDIS_QQ_STATISTICS_SET = 'qq.music:statistics.date';
 
-const REDIS_DOWNLOADING_STATUS_SET = 'downloading.file';
+const REDIS_DOWNLOADING_STATUS_SET = 'file:downloading';
 
-const REDIS_CACHED_FILE_MAP = 'cached.file';
+const REDIS_CACHED_FILE_MAP = 'file:cached';
+
+const REDIS_FILE_TYPE_MAP = 'file:type';
 
 const deprecated: boolean = true;
 
@@ -508,7 +510,7 @@ export default class Service {
 
     public async deleteCachedFile(redisKey: string) {
         try {
-            const filepath = await redis.hget(REDIS_CACHED_FILE_MAP, redisKey);
+            const filepath = await this.getFilePath(redisKey);
             filepath && await del(filepath);
         } catch (e) {
             global.error({

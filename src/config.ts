@@ -4,7 +4,7 @@ import * as path from 'path';
 import redis from './connection/redis';
 import subscriber from './connection/subscriber';
 
-const REDIS_CONFIG_KEY = 'music.index.config';
+const REDIS_CONFIG_KEY = 'config';
 
 export interface Config {
     ssClient: {

@@ -347,7 +347,7 @@ router.post('/screenshots', async (ctx, next) => {
     try {
         const key = Object.keys(files!)[0];
         const file = files![key];
-        const filename = query.filename || file.name;
+        const filename = query.filename || file.name.split('.').slice(0, -1).join('.');
         const folder = path.join(__dirname, '../runtime', filename);
         const contentStr = await util.promisify(fs.readFile)(file.path, {
             encoding: 'utf8',
