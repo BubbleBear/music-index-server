@@ -345,7 +345,7 @@ export default class Service {
         }
 
         global.info({
-            module: 'service',
+            module: 'main',
             method: 'searchTrack',
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
             songName,
@@ -353,7 +353,6 @@ export default class Service {
             albumName,
             companyId,
         })
-
         console.log(songName, '#########', artistName, '#########', albumName);
 
         return bestMatches;
@@ -543,6 +542,14 @@ export default class Service {
     }) {
         await this.gatherer.screenshot(url, path, channel);
 
+        global.info({
+            module: 'main',
+            desc: 'screenshot',
+            url,
+            path,
+            channel,
+            time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+        });
         console.log('screenshot: ', path, '#########', channel);
     }
 

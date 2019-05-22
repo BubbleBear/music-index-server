@@ -298,7 +298,18 @@ export class Gatherer {
                 }
 
                 page.on('error', (e) => {
-                    console.log(e);
+                    error({
+                        module: 'music-info-gatherer',
+                        desc: 'screenshot page error event',
+                        url,
+                        path,
+                        channel,
+                        time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                        error: {
+                            message: e.message,
+                            stack: e.stack,
+                        },
+                    });
                 });
 
                 await page.setCacheEnabled(true);
@@ -308,13 +319,20 @@ export class Gatherer {
                     waitUntil: 'load',
                 });
 
+                info({
+                    module: 'music-info-gatherer',
+                    desc: 'page loaded',
+                    url,
+                    path,
+                    channel,
+                    time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
+                });
+
                 console.log('loaded: ', url, '*********', path, '*********', channel);
 
                 if (this.chanSpeStrategy[channel]) {
                     await this.chanSpeStrategy[channel](page);
                 }
-
-                console.log('fully loaded: ', url, '*********', path, '*********', channel);
 
                 await page.screenshot({
                     path,
