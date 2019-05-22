@@ -154,7 +154,7 @@ html {
     }
 
     .table {
-      width: 400px;
+      min-width: 400px;
       display: flex;
       max-height: 200px;
       overflow-y: auto;
