@@ -22,5 +22,18 @@ export function normalizeString(target: string) {
     return result;
 }
 
+export function list2map<T extends object>(list: T[], { propAsKey }: {
+    propAsKey: keyof T
+}) {
+    const map = list.reduce((acc, cur) => {
+        const key = cur[propAsKey] as unknown as string;
+        acc[key] = cur;
+
+        return acc;
+    }, {} as { [prop: string]: T });
+
+    return map;
+}
+
 if (require.main === module) {
 }

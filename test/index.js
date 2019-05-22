@@ -7,6 +7,13 @@ const redis = new Redis({
 });
 
 !async function() {
-    const k = await redis.keys('dist-con-limit:*')
-    console.log(k)
+    await redis.hmset('test', {
+        '阿斯顿发': 1
+    })
+
+    const items = await redis.hgetall('test');
+
+    console.log(items);
+
+    await redis.disconnect();
 }()

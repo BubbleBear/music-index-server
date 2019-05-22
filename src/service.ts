@@ -36,6 +36,11 @@ const REDIS_CACHED_FILE_MAP = 'file:cached';
 
 const REDIS_FILE_TYPE_MAP = 'file:type';
 
+enum FileType {
+    'companyTracks',
+    'customScreenshots',
+};
+
 const deprecated: boolean = true;
 
 type ThenInfer<T> = T extends Promise<infer U> ? U : T;
@@ -276,8 +281,8 @@ export default class Service {
                 return searchLimit(async () => {
                     const status = 
                         option.taskGroup
-                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.taskGroup.toString())
-                        : 0;
+                        ? await this.getDownloadingStatus(option.taskGroup.toString())
+                        : false;
 
                     return {
                         name: option.songName,
@@ -455,6 +460,29 @@ export default class Service {
         await redis.srem(REDIS_DOWNLOADING_STATUS_SET, redisKey);
     }
 
+    public async setFileType(redisKey: string, type: keyof typeof FileType) {
+        await redis.hset(REDIS_FILE_TYPE_MAP, redisKey, FileType[type]);
+    }
+
+    public async unsetFileType(redisKey: string) {
+        await redis.hdel(REDIS_FILE_TYPE_MAP, redisKey);
+    }
+
+    public async batchGetFileType(redisKeys: string[]) {
+        if (redisKeys.length === 0) {
+            return {};
+        }
+
+        const types = await redis.hmget(REDIS_FILE_TYPE_MAP, ...redisKeys);
+        const typeMap = redisKeys.reduce((map, key, i) => {
+            map[key] = types[i];
+
+            return map;
+        }, {} as { [prop: string]: string });
+
+        return typeMap;
+    }
+
     public async cacheCSV(content: string, filepath: string, redisKey: string, expire: number = 76800) {
         const ws = fs.createWriteStream(filepath);
         ws.write('\ufeff');
@@ -563,8 +591,8 @@ export default class Service {
                 return screenshotLimit(async () => {
                     const status = 
                         option.taskGroup
-                        ? await redis.sismember(REDIS_DOWNLOADING_STATUS_SET, option.taskGroup.toString())
-                        : 0;
+                        ? await this.getDownloadingStatus(option.taskGroup.toString())
+                        : false;
 
                     return status && await this.screenshot(option);
                 });

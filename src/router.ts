@@ -7,7 +7,7 @@ import Router from 'koa-router';
 import moment from 'moment';
 import list2csv from 'list2csv';
 
-import { filterUndefinedAndEmpty } from './utils';
+import { filterUndefinedAndEmpty, list2map } from './utils';
 
 const router = new Router();
 
@@ -234,6 +234,8 @@ router.get('/get_tracks', async (ctx, next) => {
 
     await ctx.service.markDownloading(query.company_id);
 
+    await ctx.service.setFileType(query.company_id, 'companyTracks');
+
     const company = await ctx.service.findCompanies(companyIds);
 
     if (company.length === 0) {
@@ -355,6 +357,8 @@ router.post('/screenshots', async (ctx, next) => {
 
         await ctx.service.markDownloading(filename);
 
+        await ctx.service.setFileType(filename, 'customScreenshots');
+
         await util.promisify(fs.mkdir)(folder, {
             recursive: true,
         });
@@ -421,24 +425,44 @@ router.post('/screenshots', async (ctx, next) => {
 });
 
 router.get('/list_files', async (ctx, next) => {
-    const companyIds = await ctx.service.listCachedFiles();
-    const companies = await ctx.service.findCompanies(companyIds.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+    const filenames = await ctx.service.listCachedFiles();
+    const typeMap = await ctx.service.batchGetFileType(filenames);
+    const companies = await ctx.service.findCompanies(filenames.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+    const companyMap = list2map(companies, { propAsKey: 'company_id' });
+
+    const files = filenames.map((filename) => {
+        return {
+            filename,
+            type: Number(typeMap[filename]).toString(),
+            companyName: companyMap[filename] && companyMap[filename].name,
+        }
+    });
 
     ctx.body = {
         success: true,
-        data: companies,
+        data: files,
     };
 
     return await next();
 });
 
 router.get('/list_downloading', async (ctx, next) => {
-    const companyIds = await ctx.service.listDownloadingFiles();
-    const companies = await ctx.service.findCompanies(companyIds.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+    const filenames = await ctx.service.listDownloadingFiles();
+    const typeMap = await ctx.service.batchGetFileType(filenames);
+    const companies = await ctx.service.findCompanies(filenames.map(v => Number(v)), { _id: 0, company_id: 1, name: 1 });
+    const companyMap = list2map(companies, { propAsKey: 'company_id' });
+
+    const files = filenames.map((filename) => {
+        return {
+            filename,
+            type: Number(typeMap[filename]).toString(),
+            companyName: companyMap[filename] && companyMap[filename].name,
+        }
+    });
 
     ctx.body = {
         success: true,
-        data: companies,
+        data: files,
     };
 
     return await next();
@@ -448,6 +472,7 @@ router.get('/cancel_downloading', async (ctx, next) => {
     const query = ctx.query;
 
     await ctx.service.unmarkDownloading(query.filename);
+    await ctx.service.unsetFileType(query.filename);
 
     ctx.body = {
         success: true,
@@ -460,6 +485,7 @@ router.get('/delete_cached_file', async (ctx, next) => {
     const query = ctx.query;
 
     await ctx.service.deleteCachedFile(query.filename);
+    await ctx.service.unsetFileType(query.filename);
 
     ctx.body = {
         success: true,
