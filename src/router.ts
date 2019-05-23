@@ -239,7 +239,7 @@ router.get('/get_tracks', async (ctx, next) => {
     const company = await ctx.service.findCompanies(companyIds);
 
     if (company.length === 0) {
-        await ctx.service.updateCompany(query.company_id);
+        await ctx.service.fetchCompany(query.company_id);
     }
 
     const embeded = await ctx.service.findEmbededAlbums(companyIds);
@@ -383,27 +383,27 @@ router.post('/screenshots', async (ctx, next) => {
                 const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
                     if (d[k] && d[k]!.url) {
                         const url = d[k]!.url!;
-                        const filename = path.join(folder, `${cur.name}_${k}.png`);
+                        const filepath = path.join(folder, `${cur.name}_${k}.png`);
     
                         return {
                             url,
-                            path: filename,
+                            path: filepath,
                             channel: k,
-                            taskGroup: query.company_id,
+                            taskGroup: filename,
                         };
                     }
                 }).filter((v): v is {
                     url: string,
                     path: string,
                     channel: keyof typeof d,
-                    taskGroup: number | string,
+                    taskGroup: string,
                 } => !!v);
     
                 acc = acc.concat(part);
     
                 return acc;
             }, []);
-    
+
             await ctx.service.batchScreenshot(batchScreenshotOptions);
 
             await ctx.service.cacheFile(filename, folder);
@@ -606,6 +606,10 @@ router.post('/configs', async (ctx, next) => {
     }
 
     return await next();
+});
+
+router.post('/upload/geo_mark', async (ctx, next) => {
+    ;
 });
 
 export default router;

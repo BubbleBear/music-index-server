@@ -113,7 +113,7 @@ export default function wrapper(concurrency: number, domain: string) {
 
 if (require.main === module) {
     !async function() {
-        const arr = Array(5).fill(0);
+        const arr = Array(100).fill(0);
 
         const limit = wrapper(3, 'test');
         const limit1 = wrapper(3, 'test');
@@ -124,44 +124,44 @@ if (require.main === module) {
             let a: any;
             // DEBUG = true;
 
-            // a = arr.map(async (_, i) => {
-            //     let r;
+            a = arr.map(async (_, i) => {
+                let r;
 
-            //     while (r = await atom('test', async () => {
-            //         return await new Promise(resolve => {
-            //             setTimeout(() => {
-            //                 console.log(i);
-            //                 resolve();
-            //             }, 1000);
+                while (r = await atom('test', async () => {
+                    return await new Promise(resolve => {
+                        setTimeout(() => {
+                            console.log(i);
+                            resolve();
+                        }, 1000);
+                    });
+                }), !r) {
+                };
+
+                return r;
+            });
+
+            // a = [
+            //     Promise.all(arr.map((_, i) => {
+            //         return limit(async () => {
+            //             return await new Promise(resolve => {
+            //                 setTimeout(() => {
+            //                     console.log('0: ', i);
+            //                     resolve();
+            //                 }, 3000);
+            //             });
             //         });
-            //     }), !r) {
-            //     };
-
-            //     return r;
-            // });
-
-            a = [
-                Promise.all(arr.map((_, i) => {
-                    return limit(async () => {
-                        return await new Promise(resolve => {
-                            setTimeout(() => {
-                                console.log('0: ', i);
-                                resolve();
-                            }, 3000);
-                        });
-                    });
-                })),
-                Promise.all(arr.map(async (_, i) => {
-                    return limit1(async () => {
-                        return await new Promise(resolve => {
-                            setTimeout(() => {
-                                console.log('1: ', i);
-                                resolve();
-                            }, 3000);
-                        });
-                    });
-                })),
-            ];
+            //     })),
+            //     Promise.all(arr.map(async (_, i) => {
+            //         return limit1(async () => {
+            //             return await new Promise(resolve => {
+            //                 setTimeout(() => {
+            //                     console.log('1: ', i);
+            //                     resolve();
+            //                 }, 3000);
+            //             });
+            //         });
+            //     })),
+            // ];
 
             await Promise.all(a);
         }

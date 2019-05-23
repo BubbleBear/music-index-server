@@ -45,14 +45,13 @@ const deprecated: boolean = true;
 
 type ThenInfer<T> = T extends Promise<infer U> ? U : T;
 
+type IndexiableObject<T> = { [prop: string]: T };
+
 export default class Service {
     config: Config;
 
     private db!: ReturnType<ThenInfer<typeof mongo>['db']>;
 
-    // private get gatherer() {
-    //     return new Gatherer();
-    // }
     private gatherer = new Gatherer();
 
     constructor() {
@@ -68,7 +67,38 @@ export default class Service {
         this.db = client.db('qq_music_crawler');
     }
 
-    async updateCompany(companyId: number) {
+    async batchUpdate(documents: IndexiableObject<any>[], queryFields: string[], updateFields: string[]) {
+        await this.sync();
+
+        const collection = this.db.collection('company');
+
+        const bulk = documents.map((document) => {
+            const query = queryFields.reduce((acc, cur) => {
+                acc[cur] = document[cur];
+
+                return acc;
+            }, {} as any);
+
+            const update = updateFields.reduce((acc, cur) => {
+                acc[cur] = document[cur];
+
+                return acc;
+            }, {} as any);
+
+            return {
+                updateOne: {
+                    filter: query,
+                    update: {
+                        $set: update,
+                    },
+                },
+            };
+        });
+
+        await collection.bulkWrite(bulk);
+    }
+
+    async fetchCompany(companyId: number) {
         await this.sync();
 
         const retryCount = 5;
@@ -203,8 +233,8 @@ export default class Service {
         }
 
         await collection.bulkWrite(
-            bulk.map((op: any) => ({
-                insertOne: op,
+            bulk.map((doc: any) => ({
+                insertOne: doc,
             })),
         );
 
@@ -621,5 +651,7 @@ if (require.main === module) {
     !async function() {
         const service = new Service();
         await service.sync();
+
+        console.log('done');
     }();
 }
