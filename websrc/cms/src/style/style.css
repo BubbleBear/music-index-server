@@ -1,6 +1,9 @@
 html {
       font-family: "Helvetica Neue", Helvetica, PingFang, "Hiragino Sans GB", "Microsoft YaHei", "微软雅黑", Arial, sans-serif;
     }
+    .title {
+      text-align: center
+    }
 
     body {
       -webkit-overflow-scrolling: touch;
@@ -109,26 +112,6 @@ html {
       opacity: .5;
     }
 
-    #loading {
-      width: 100%;
-      height: 100vh;
-      position: fixed;
-      display: none;
-      top: 0;
-      left: 0;
-      background: rgba(48, 47, 47, 0.7)
-    }
-
-    #loading svg {
-      position: absolute;
-      top: 0;
-      left: 0;
-      right: 0;
-      bottom: 0;
-      margin: auto;
-      width: 60px;
-      height: 60px;
-    }
 
     #date-select {
       height: 28px;
@@ -154,7 +137,7 @@ html {
     }
 
     .table {
-      min-width: 400px;
+      width: 400px;
       display: flex;
       max-height: 200px;
       overflow-y: auto;
@@ -201,7 +184,7 @@ html {
       /* border-left: #9f9f9f 1px solid; */
     }
 
-    .operation-warp button {
+    .cancel {
       width: 60px;
       font-size: 12px;
       border-radius: 4px;
@@ -209,7 +192,7 @@ html {
       display: block;
       margin: 0 auto;
     }
-    .config-wrap .tip {
+    .tip {
       font-size: 14px;
       color: #333;
       text-align: center;
