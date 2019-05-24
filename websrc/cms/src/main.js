@@ -24,6 +24,7 @@ new Vue({
     }, (error) => Promise.reject(error))
     axios.interceptors.response.use((response) => {
       this.showLoading = false
+      if (!response.data.success) return alert(response.data.message || '后台出错了请询问技术人员')
       return response.data
     }, (error) => {
       this.showLoading = true

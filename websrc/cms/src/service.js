@@ -29,5 +29,8 @@ export default {
   },
   crateCsvTask (file) {
     return axios.post('/api/v1/screenshots', file, { headers: { 'Content-Type': 'multipart/form-data' } })
+  },
+  uploadLocationCsv (file) {
+    return axios.post('/api/v1/upload/geo_mark', file, { headers: { 'Content-Type': 'multipart/form-data' } })
   }
 }

@@ -66,31 +66,32 @@
 
     </div>
   </div>
-  <div class="title">按公司ID创建查询任务</div>
-  <div class="main-wrap">
-    <div>
+  <div class="model-warp">
+    <div class="title">按公司ID创建查询任务</div>
+    <div class="main-wrap">
       <div>
-        <div class="input-wrap">
-          <span>公司ID:</span>
-          <input type="text" id="create-track-id" placeholder="请输入公司ID" v-model="companyId">
+        <div>
+          <div class="input-wrap">
+            <span>公司ID:</span>
+            <input type="text" id="create-track-id" placeholder="请输入公司ID" v-model="companyId">
+          </div>
+        </div>
+        <button id="create-track" class="download" @click="createTask">创建查询任务</button>
+      </div>
+      <div class="common-list-warp">
+        <div class="title" id="downloading-count">正在进行的查询总数：{{downloadingList.length}}</div>
+        <div class="table" v-if="downloadingList.length" id="downloading-table">
+          <ul v-for="(row,index) in downloadingListKeyLabel" :key="index">
+            <li class="table-title" v-text="row.label" :style="index === 0 && 'border-left: none'" ></li>
+            <li v-for="(item,i) in downloadingList" :key="i" :style="index === 0 && 'border-left: none'" >
+              {{row.key && (row.key === 'index' ? i+1 : row.key === 'status' ? '正在下载' : item[row.key])}}
+              <button v-if="!row.key" class="cancel" @click="cancelDownloading(item.filename)">取消</button>
+            </li>
+          </ul>
         </div>
       </div>
-      <button id="create-track" class="download" @click="createTask">创建查询任务</button>
     </div>
-    <div class="common-list-warp">
-      <div class="title" id="downloading-count">正在进行的查询总数：{{downloadingList.length}}</div>
-      <div class="table" v-if="downloadingList.length" id="downloading-table">
-        <ul v-for="(row,index) in downloadingListKeyLabel" :key="index">
-          <li class="table-title" v-text="row.label" :style="index === 0 && 'border-left: none'" ></li>
-          <li v-for="(item,i) in downloadingList" :key="i" :style="index === 0 && 'border-left: none'" >
-            {{row.key && (row.key === 'index' ? i+1 : row.key === 'status' ? '正在下载' : item[row.key])}}
-            <button v-if="!row.key" class="cancel" @click="cancelDownloading(item.filename)">取消</button>
-          </li>
-        </ul>
-      </div>
-    </div>
-  </div>
-  <div class="title" style="height:40px;line-height: 40px">已完成公司列表</div>
+    <div class="title" style="height:40px;line-height: 40px">已完成公司列表</div>
   <div class="tip" id="file-list-count"
     style="text-align: center;font-size: 14px;color:#999;height:28px;line-height:28px;padding-bottom:10px">总数：{{companyTracks.length}}</div>
   <div style="padding-top:0;" class="main-wrap">
@@ -106,33 +107,60 @@
       </div>
     </div>
   </div>
-  <div class="title" style="height:40px;line-height: 40px">根据文件创建查询</div>
-  <div class="upload-btn-wrap">
-      <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
-        xmlns="http://www.w3.org/2000/svg">
-        <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
-      <span class="tip">点击上传csv查询文件</span>
-      <input type="file" @change="uploadCsv" accept=".csv" id="config-upload">
-    </div>
-    <div class="tip">请上传和开发人员确定的文件格式</div>
-  <div class="title" style="height:40px;line-height: 40px">已完成文件列表</div>
-  <div class="tip" id="file-list-count"
-    style="text-align: center;font-size: 14px;color:#999;height:28px;line-height:28px;padding-bottom:10px">总数：{{customScreenshots.length}}</div>
-  <div style="padding-top:0;" class="main-wrap">
-    <div class="common-list-warp " style="padding-top:0" >
-      <div class="table" v-if="customScreenshots.length" id="file-list" style="width:auto">
-        <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" v-if="row.key!=='companyName'" :class="row.className">
-          <li class="table-title" v-text="row.label" :style="index === 0 && 'border-left: none'" ></li>
-          <li v-for="(item,i) in customScreenshots" :key="i" :style="index === 0 && 'border-left: none'" >
-            {{row.key && (row.key === 'index' ? i+1 : row.key === 'status' ? '已完成' : item[row.key])}}
-            <button v-if="!row.key" class="cancel" @click="downloadFile(item.filename)">下载</button>
-          </li>
-        </ul>
+  </div>
+  <div class="model-warp">
+    <div class="title" style="height:40px;line-height: 40px">根据文件创建查询</div>
+    <div class="main-wrap">
+      <div class="upload-model-wrap">
+          <div class="upload-btn-wrap">
+            <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
+              xmlns="http://www.w3.org/2000/svg">
+              <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
+            <span class="tip">点击上传csv查询文件</span>
+            <input type="file" @change="uploadCsv" accept=".csv" id="config-upload">
+          </div>
+        <div class="upload-btn-wrap" style="margin-top: 10px">
+          <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
+            xmlns="http://www.w3.org/2000/svg">
+          <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
+          <span class="tip">点击上传地理位置追加文件</span>
+          <input type="file" @change="uploadLocationCsv" accept=".csv" id="config-upload">
+        </div>
+        <div class="tip">请上传和开发人员确定的文件格式</div>
+      </div>
+      <div class="common-list-warp">
+        <div class="title" id="downloading-count">正在进行的csv查询总数：{{csvDownloadingList.length}}</div>
+        <div class="table" v-if="csvDownloadingList.length" id="downloading-table" style="width:auto">
+          <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" v-if="!row.hide">
+            <li class="table-title" v-text="row.showSubLabel ? row.subLabel :row.label" :style="index === 0 && 'border-left: none'" ></li>
+            <li v-for="(item,i) in csvDownloadingList" :key="i" :style="index === 0 && 'border-left: none'" >
+              {{row.key && (row.key === 'index' ? i+1 : row.key === 'status' ? '正在下载' : item[row.key])}}
+              <button v-if="!row.key" class="cancel" @click="cancelDownloading(item.filename)">取消</button>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
+      <div class="title" style="height:40px;line-height: 40px">已完成文件列表</div>
+      <div class="tip" id="file-list-count"
+        style="text-align: center;font-size: 14px;color:#999;height:28px;line-height:28px;padding-bottom:10px">总数：{{customScreenshots.length}}</div>
+      <div style="padding-top:0;" class="main-wrap">
+        <div class="common-list-warp " style="padding-top:0" >
+          <div class="table" v-if="customScreenshots.length" id="file-list" style="width:auto">
+            <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" v-if="row.key!=='companyName'" :class="row.className" >
+              <li class="table-title" v-text="row.showSubLabel ? row.subLabel :row.label" :style="index === 0 && 'border-left: none'" ></li>
+              <li v-for="(item,i) in customScreenshots" :key="i" :style="index === 0 && 'border-left: none'" >
+                {{row.key && (row.key === 'index' ? i+1 : row.key === 'status' ? '已完成' : item[row.key])}}
+                <button v-if="!row.key" class="cancel" @click="downloadFile(item.filename)">下载</button>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
   </div>
   <div class="config-wrap">
     <div class="title" style="text-align: center">基础配置</div>
+
     <div class="upload-btn-wrap">
       <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
         xmlns="http://www.w3.org/2000/svg">
@@ -141,7 +169,6 @@
       <input type="file" @change="uploadJson" accept=".json" id="config-upload">
     </div>
     <div class="tip">Shadowsocks配置文件导出方式：Shadowsocks图标右击 -> 服务器 -> 导出服务器全部配置</div>
-
     <div class="config-list">
       <div class="list-header">
         <div>序号</div>
@@ -201,8 +228,8 @@ export default {
       downloadingList: [],
       downloadingListKeyLabel: [
         {label: '序号', key: 'index', className: 'index-warp'},
-        {label: '公司ID', key: 'filename', subLabel: '文件名', className: 'id-warp'},
-        {label: '公司名称', key: 'companyName', className: 'id-warp'},
+        {label: '公司ID', key: 'filename', subLabel: '文件名', className: 'id-warp', showSubLabel: true},
+        {label: '公司名称', key: 'companyName', className: 'id-warp', hide: true},
         {label: '状态', key: 'status', className: 'status-warp'},
         {label: '操作', className: 'other-warp'}
       ],
@@ -212,7 +239,8 @@ export default {
       ssClientConfigKeys: ['index', 'server', 'server_port'],
       domestics: [],
       companyTracks: [],
-      customScreenshots: []
+      customScreenshots: [],
+      csvDownloadingList: []
     }
   },
   mixins: [],
@@ -247,6 +275,12 @@ export default {
       let formData = new FormData()
       formData.append('csv', event.target.files[0])
       await service.crateCsvTask(formData)
+      this.getDownloadingList()
+    },
+    async uploadLocationCsv (event) {
+      let formData = new FormData()
+      formData.append('csv', event.target.files[0])
+      await service.uploadLocationCsv(formData)
     },
     async getDateOptions () {
       try {
@@ -264,10 +298,15 @@ export default {
         console.error(err)
       }
     },
+
     async getDownloadingList () {
       try {
         const res = await service.getDownloadList()
-        this.downloadingList = res.data
+        let downloadingList = []
+        let csvDownloadingList = []
+        res.data.forEach(val => val.type === '0' ? downloadingList.push(val) : csvDownloadingList.push(val))
+        this.downloadingList = downloadingList
+        this.csvDownloadingList = csvDownloadingList
       } catch (err) {
         console.error(err)
       }
@@ -275,8 +314,8 @@ export default {
     async createTask () {
       if (!this.companyId) return window.alert('请输入公司Id后再进行创建')
       try {
-        this.companyId = ''
         await service.createTask(this.companyId)
+        this.companyId = ''
         this.getDownloadingList()
       } catch (err) {
         console.error(err)
@@ -365,5 +404,16 @@ export default {
 </script>
 <style lang="stylus" scoped>
 #index {
+  .model-warp {
+    padding-top 10px
+    border-top 1px solid #f0f0f0
+  }
+  .upload-model-wrap {
+    .upload-btn-wrap {
+      width none
+      max-width 300px
+      height 66px
+    }
+  }
 }
 </style>
