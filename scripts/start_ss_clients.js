@@ -55,6 +55,8 @@ async function start(startPort = 7777) {
                             desc: 'ss std output',
                             message: chunk && chunk.toString() || '',
                         });
+
+                        console.log(chunk && chunk.toString() || '');
                     });
                 
                     ssp.stderr.on('data', (chunk) => {
@@ -66,6 +68,8 @@ async function start(startPort = 7777) {
                             desc: 'ss error output',
                             message: chunk && chunk.toString() || '',
                         });
+
+                        console.log(chunk && chunk.toString() || '');
                     });
                 });
 
