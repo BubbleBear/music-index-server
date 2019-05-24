@@ -120,6 +120,7 @@ router.get('/csv/company_statistics', async (ctx, next) => {
     const headerMap: any = {
         company_id: '唱片公司ID',
         company_name: '唱片公司',
+        geo_mark: '归属地信息'
     };
 
     [...dates].sort((a, b) => {
@@ -654,7 +655,8 @@ router.post('/upload/geo_mark', async (ctx, next) => {
             return item;
         });
 
-        await ctx.service.batchUpdate(list, { id: 'company_id' }, { geo_mark: 'geo_mark' });
+        await ctx.service.batchUpdate('company', list, { id: 'company_id' }, { geo_mark: 'geo_mark' }, 'updateOne');
+        await ctx.service.batchUpdate('company_statistics', list, { id: 'company_id' }, { geo_mark: 'geo_mark' }, 'updateMany');
 
         ctx.body = {
             success: true,
