@@ -218,6 +218,15 @@ router.get('/get_track', async (ctx, next) => {
 router.get('/get_tracks', async (ctx, next) => {
     const query = ctx.query;
 
+    if (!query.company_id) {
+        ctx.body = {
+            success: false,
+            message: '缺少company_id',
+        };
+
+        return await next();
+    }
+
     const companyIds = [ query.company_id ];
 
     const downloading = await ctx.service.getDownloadingStatus(query.company_id);
@@ -356,14 +365,6 @@ router.post('/screenshots', async (ctx, next) => {
             encoding: 'utf8',
         });
 
-        await ctx.service.markDownloading(filename);
-
-        await ctx.service.setFileType(filename, 'customScreenshots');
-
-        await util.promisify(fs.mkdir)(folder, {
-            recursive: true,
-        });
-
         const content = contentStr.split(/[\r\n]+/);
         const head = content.splice(0, 1)[0].split(',').map(v => {
             return v.match(/^\s*"?(.*?)"?\s*$/)![1];
@@ -388,6 +389,14 @@ router.post('/screenshots', async (ctx, next) => {
             item['albumName'] = item['专辑名'];
 
             return item;
+        });
+
+        await ctx.service.markDownloading(filename);
+
+        await ctx.service.setFileType(filename, 'customScreenshots');
+
+        await util.promisify(fs.mkdir)(folder, {
+            recursive: true,
         });
 
         ctx.service.batchSearchTrack(list).then(async (result) => {
