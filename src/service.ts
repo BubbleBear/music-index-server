@@ -360,8 +360,7 @@ export default class Service {
                     //     );
                     return normalizeString(v.name) == normalizeString(songName)
                         && (
-                            normalizeString(v.name) == normalizeString(artistName)
-                            || v.artists.reduce((acc: boolean, cur) => {
+                            v.artists.reduce((acc: boolean, cur) => {
 
                                 return acc || normalizeString(cur.name) == normalizeString(artistName);
                             }, false)
