@@ -363,17 +363,30 @@ router.post('/screenshots', async (ctx, next) => {
             recursive: true,
         });
 
-        const list: any[] = contentStr.split(/[\r\n]+/).slice(1);
+        const content = contentStr.split(/[\r\n]+/);
+        const head = content.splice(0, 1)[0].split(',').map(v => {
+            return v.match(/^\s*"?(.*?)"?\s*$/)![1];
+        });
 
-        list.forEach((src, i) => {
-            const values = src.split(',');
-            const dist = {
-                albumName: values[0],
-                artistName: values[1],
-                songName: values[2],
-                taskGroup: filename,
-            };
-            list[i] = dist;
+        const list = content.map((rowStr) => {
+            const row = rowStr.split(',');
+            const item = head.reduce((acc, cur, i) => {
+                acc[cur] = row[i] && row[i].match(/^\s*"?(.*?)"?\s*$/)![1];
+
+                return acc;
+            }, {} as any);
+
+            if (!item['歌曲名'] || !item['歌手名'] || !item['专辑名']) {
+                throw new Error('必须含有 歌曲名, 歌手名, 专辑名 字段');
+            }
+
+            item.taskGroup = filename;
+
+            item['songName'] = item['歌曲名'];
+            item['artistName'] = item['歌手名'];
+            item['albumName'] = item['专辑名'];
+
+            return item;
         });
 
         ctx.service.batchSearchTrack(list).then(async (result) => {
@@ -413,7 +426,7 @@ router.post('/screenshots', async (ctx, next) => {
 
         ctx.body = {
             success: true,
-        }
+        };
     } catch (e) {
         ctx.body = {
             success: false,
@@ -435,7 +448,7 @@ router.get('/list_files', async (ctx, next) => {
             filename,
             type: Number(typeMap[filename]).toString(),
             companyName: companyMap[filename] && companyMap[filename].name,
-        }
+        };
     });
 
     ctx.body = {
@@ -457,7 +470,7 @@ router.get('/list_downloading', async (ctx, next) => {
             filename,
             type: Number(typeMap[filename]).toString(),
             companyName: companyMap[filename] && companyMap[filename].name,
-        }
+        };
     });
 
     ctx.body = {
@@ -609,7 +622,49 @@ router.post('/configs', async (ctx, next) => {
 });
 
 router.post('/upload/geo_mark', async (ctx, next) => {
-    ;
+    const files = ctx.request.files;
+    const query = ctx.query;
+
+    try {
+        const key = Object.keys(files!)[0];
+        const file = files![key];
+        const contentStr = await util.promisify(fs.readFile)(file.path, {
+            encoding: 'utf8',
+        });
+
+        const content = contentStr.split(/[\r\n]+/);
+        const head = content.splice(0, 1)[0].split(',').map(v => {
+            return v.match(/^\s*"?(.*?)"?\s*$/)![1];
+        });
+
+        if (!head.includes('id') || !head.includes('geo_mark')) {
+            throw new Error('必须含有id, geo_mark字段');
+        }
+
+        const list = content.map((rowStr) => {
+            const row = rowStr.split(',');
+            const item = head.reduce((acc, cur, i) => {
+                acc[cur] = row[i] && row[i].match(/^\s*"?(.*?)"?\s*$/)![1];
+
+                return acc;
+            }, {} as any);
+
+            item['id'] = Number(item['id']);
+
+            return item;
+        });
+
+        await ctx.service.batchUpdate(list, { id: 'company_id' }, { geo_mark: 'geo_mark' });
+
+        ctx.body = {
+            success: true,
+        };
+    } catch (e) {
+        ctx.body = {
+            success: false,
+            message: e.message,
+        };
+    }
 });
 
 export default router;

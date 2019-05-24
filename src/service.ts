@@ -67,20 +67,20 @@ export default class Service {
         this.db = client.db('qq_music_crawler');
     }
 
-    async batchUpdate(documents: IndexiableObject<any>[], queryFields: string[], updateFields: string[]) {
+    async batchUpdate(documents: IndexiableObject<any>[], queryFields: IndexiableObject<string>, updateFields: IndexiableObject<string>) {
         await this.sync();
 
         const collection = this.db.collection('company');
 
         const bulk = documents.map((document) => {
-            const query = queryFields.reduce((acc, cur) => {
-                acc[cur] = document[cur];
+            const query = Object.keys(queryFields).reduce((acc, cur) => {
+                acc[queryFields[cur]] = document[cur];
 
                 return acc;
             }, {} as any);
 
-            const update = updateFields.reduce((acc, cur) => {
-                acc[cur] = document[cur];
+            const update = Object.keys(updateFields).reduce((acc, cur) => {
+                acc[updateFields[cur]] = document[cur];
 
                 return acc;
             }, {} as any);
