@@ -1,8 +1,8 @@
 node_modules/
-dist/
+/dist/
 logs/
 .vscode/
 **/.DS_Store
 runtime/
 dump.rdb
-config/
+/config/
