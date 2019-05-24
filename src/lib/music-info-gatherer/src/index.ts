@@ -413,8 +413,13 @@ if (require.main === module) {
     !async function() {
         const gatherer = new Gatherer();
 
+        const r = await gatherer.search('好心分手', '卢巧音');
+        const fs = require('fs');
+        const ws = fs.createWriteStream('x.json');
+        ws.write(JSON.stringify(r));
+        ws.end();
         // await gatherer.screenshot('https://open.spotify.com/track/2vehaGr6bpERquj9fPgQk0', './y.png', 'spotify');
-        await gatherer.screenshot('https://www.youtube.com/watch?v=rnavVgXmqdU', './y.png', 'youtube');
+        // await gatherer.screenshot('https://www.youtube.com/watch?v=rnavVgXmqdU', './y.png', 'youtube');
 
         await gatherer.domesticProxyPool.destroy();
         await gatherer.foreignProxyPool.destroy();

@@ -67,11 +67,7 @@ export default class Service {
         this.db = client.db('qq_music_crawler');
     }
 
-    async batchUpdate(documents: IndexiableObject<any>[], queryFields: IndexiableObject<string>, updateFields: IndexiableObject<string>) {
-        await this.sync();
-
-        const collection = this.db.collection('company');
-
+    bulkBuilder(documents: IndexiableObject<any>[], queryFields: IndexiableObject<string>, updateFields: IndexiableObject<string>, action: string) {
         const bulk = documents.map((document) => {
             const query = Object.keys(queryFields).reduce((acc, cur) => {
                 acc[queryFields[cur]] = document[cur];
@@ -86,7 +82,7 @@ export default class Service {
             }, {} as any);
 
             return {
-                updateOne: {
+                [action]: {
                     filter: query,
                     update: {
                         $set: update,
@@ -94,6 +90,15 @@ export default class Service {
                 },
             };
         });
+
+        return bulk;
+    }
+
+    async batchUpdate(collectionName: string, documents: IndexiableObject<any>[], queryFields: IndexiableObject<string>, updateFields: IndexiableObject<string>, action: string) {
+        await this.sync();
+
+        const collection = this.db.collection(collectionName);
+        const bulk = this.bulkBuilder(documents, queryFields, updateFields, action);
 
         await collection.bulkWrite(bulk);
     }
@@ -228,6 +233,7 @@ export default class Service {
                     acc += cur.total;
                     return acc;
                 }, 0),
+                geo_mark: company.geo_mark,
                 createdAt: moment(assignedDate).unix(),
             });
         }
@@ -354,8 +360,7 @@ export default class Service {
                     //     );
                     return normalizeString(v.name) == normalizeString(songName)
                         && (
-                            normalizeString(v.name) == normalizeString(artistName)
-                            || v.artists.reduce((acc: boolean, cur) => {
+                            v.artists.reduce((acc: boolean, cur) => {
 
                                 return acc || normalizeString(cur.name) == normalizeString(artistName);
                             }, false)

@@ -7,6 +7,8 @@ const subscriber = new Redis({
     dropBufferSupport: true,
 });
 
+subscriber.setMaxListeners(100);
+
 export default subscriber;
 
 if (require.main === module) {
