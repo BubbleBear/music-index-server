@@ -14,7 +14,7 @@ export default class ItunesAdapter extends AbstractAdapter {
             url,
             baseURL: 'https://itunes.apple.com',
             httpsAgent: new ProxyAgent(this.proxy),
-            timeout: 10000,
+            timeout: 30000,
         });
     }
 

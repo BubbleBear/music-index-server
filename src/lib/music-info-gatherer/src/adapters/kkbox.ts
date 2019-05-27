@@ -17,7 +17,7 @@ export default class KkboxAdapter extends AbstractAdapter {
             baseURL: 'https://www.kkbox.com',
             responseType: 'document',
             httpsAgent: new ProxyAgent(this.proxy),
-            timeout: 10000,
+            timeout: 30000,
         });
     }
 
