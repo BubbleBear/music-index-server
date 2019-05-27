@@ -370,6 +370,10 @@ router.post('/screenshots', async (ctx, next) => {
             return v.match(/^\s*"?(.*?)"?\s*$/)![1];
         });
 
+        if (!head.includes('歌曲名') || !head.includes('歌手名') || !head.includes('专辑名')) {
+            throw new Error('必须含有 歌曲名, 歌手名, 专辑名 字段');
+        }
+
         const list = content.map((rowStr) => {
             const row = rowStr.split(',');
             const item = head.reduce((acc, cur, i) => {
@@ -377,10 +381,6 @@ router.post('/screenshots', async (ctx, next) => {
 
                 return acc;
             }, {} as any);
-
-            if (!item['歌曲名'] || !item['歌手名'] || !item['专辑名']) {
-                throw new Error('必须含有 歌曲名, 歌手名, 专辑名 字段');
-            }
 
             item.taskGroup = filename;
 

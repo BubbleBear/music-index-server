@@ -14,7 +14,7 @@ export default class QQMusicAdapter extends AbstractAdapter {
             url,
             baseURL: 'https://c.y.qq.com/',
             httpsAgent: new ProxyAgent(this.proxy),
-            timeout: 10000,
+            timeout: 30000,
         });
     }
 
