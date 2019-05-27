@@ -278,16 +278,17 @@ export default {
     async uploadCsv (event) {
       let formData = new FormData()
       formData.append('csv', event.target.files[0])
-      await service.crateCsvTask(formData)
+      const data = await service.crateCsvTask(formData)
       this.getDownloadingList()
       event.target.value = ''
+      if (data && data.success) alert('上传成功')
     },
     async uploadLocationCsv (event) {
-      console.log(event)
       let formData = new FormData()
       formData.append('csv', event.target.files[0])
-      await service.uploadLocationCsv(formData)
+      const data = await service.uploadLocationCsv(formData)
       event.target.value = ''
+      if (data && data.success) alert('上传成功')
     },
     async getDateOptions () {
       try {
