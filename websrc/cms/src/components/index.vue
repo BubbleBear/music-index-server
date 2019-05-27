@@ -250,7 +250,11 @@ export default {
     },
     uploadJson (event) {
       const reader = new window.FileReader()
-      reader.addEventListener('load', () => this.postSsClient(JSON.parse(reader.result)))
+      reader.addEventListener('load', () => {
+        const result = Object.assign({}, JSON.parse(reader.result))
+        this.postSsClient(result)
+        event.target.value = ''
+      })
       reader.readAsBinaryString(event.target.files[event.target.files.length - 1])
     },
     downloadMD () {
@@ -276,11 +280,14 @@ export default {
       formData.append('csv', event.target.files[0])
       await service.crateCsvTask(formData)
       this.getDownloadingList()
+      event.target.value = ''
     },
     async uploadLocationCsv (event) {
+      console.log(event)
       let formData = new FormData()
       formData.append('csv', event.target.files[0])
       await service.uploadLocationCsv(formData)
+      event.target.value = ''
     },
     async getDateOptions () {
       try {
@@ -408,10 +415,11 @@ export default {
     padding-top 10px
     border-top 1px solid #f0f0f0
   }
+
   .upload-model-wrap {
     .upload-btn-wrap {
-      width none
       max-width 300px
+      width none
       height 66px
     }
   }
