@@ -281,11 +281,7 @@ router.get('/get_tracks', async (ctx, next) => {
             return;
         }
 
-        const folder = path.join(__dirname, '../runtime', query.company_id);
-
-        await util.promisify(fs.mkdir)(folder, {
-            recursive: true,
-        });
+        const folder = path.join(__dirname, '../runtime');
 
         let csv;
 
@@ -338,9 +334,7 @@ router.get('/get_tracks', async (ctx, next) => {
             csv = list2csv(list, orderedHeaderMap).replace(/"undefined"/g, '"未找到"');
         }
 
-        await ctx.service.cacheCSV(csv, path.join(folder, 'collection.csv'), query.company_id);
-
-        await ctx.service.cacheFile(query.company_id, folder);
+        await ctx.service.cacheCSV(csv, path.join(folder, `${query.company_id}.csv`), query.company_id);
 
         await ctx.service.unmarkDownloading(query.company_id);
     });

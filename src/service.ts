@@ -523,6 +523,8 @@ export default class Service {
         ws.write('\ufeff');
         ws.write(content);
         ws.end();
+
+        await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
 
     public async listDownloadingFiles() {
