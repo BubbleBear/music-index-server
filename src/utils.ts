@@ -17,9 +17,15 @@ export function filterUndefinedAndEmpty(obj: object | any[] | any): any {
 }
 
 export function normalizeString(target: string) {
-    const result = sify(target).toLowerCase().replace(/_/g, '-');
+    try {
+        const result = sify(target).toLowerCase().replace(/_/g, '-');
 
-    return result;
+        return result;
+    } catch (e) {
+        console.log(target, ' ', e);
+
+        return target;
+    }
 }
 
 export function list2map<T extends object>(list: T[], { propAsKey }: {

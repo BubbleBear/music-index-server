@@ -293,7 +293,7 @@ router.get('/get_tracks', async (ctx, next) => {
             const orderedHeaderMap = tunnels.reduce((acc, cur) => {
                 acc.set(cur, cur);
                 return acc;
-            }, new Map([['歌曲', '歌曲'], ['歌手', '歌手']]));
+            }, new Map([['歌曲名', '歌曲名'], ['歌手名', '歌手名'], ['专辑名', '专辑名']]));
 
             const map = result.reduce((acc, cur) => {
                 const d = cur.data;
@@ -302,7 +302,8 @@ router.get('/get_tracks', async (ctx, next) => {
                         acc[cur.name] = {};
                     }
 
-                    acc[cur.name]['歌手'] = cur.artist;
+                    acc[cur.name]['歌手名'] = cur.artist;
+                    acc[cur.name]['专辑名'] = cur.album;
 
                     if (d[k]) {
                         if (d[k]!.name) {
@@ -325,7 +326,7 @@ router.get('/get_tracks', async (ctx, next) => {
 
             const list = Object.keys(map).reduce((acc, cur) => {
                 const entry = map[cur];
-                entry['歌曲'] = cur;
+                entry['歌曲名'] = cur;
                 acc.push(entry);
 
                 return acc;
@@ -353,7 +354,7 @@ router.post('/screenshots', async (ctx, next) => {
     try {
         const key = Object.keys(files!)[0];
         const file = files![key];
-        const filename = query.filename || file.name.split('.').slice(0, -1).join('.');
+        const filename = '~' + (query.filename || file.name.split('.').slice(0, -1).join('.'));
         const folder = path.join(__dirname, '../runtime', filename);
         const contentStr = await util.promisify(fs.readFile)(file.path, {
             encoding: 'utf8',
@@ -385,6 +386,8 @@ router.post('/screenshots', async (ctx, next) => {
             return item;
         });
 
+        await ctx.service.deleteCachedFile(filename);
+
         await ctx.service.markDownloading(filename);
 
         await ctx.service.setFileType(filename, 'customScreenshots');
@@ -394,7 +397,17 @@ router.post('/screenshots', async (ctx, next) => {
         });
 
         ctx.service.batchSearchTrack(list).then(async (result) => {
-            const batchScreenshotOptions = result.reduce<Parameters<typeof ctx.service.batchScreenshot>[0]>((acc, cur) => {
+            type BaseScreenshotOption = Parameters<typeof ctx.service.batchScreenshot>[0][0];
+
+            type ScreenshotOption = BaseScreenshotOption & {
+                songName: string,
+                artistName: string,
+                albumName: string,
+            };
+
+            const failedList: any[] = [];
+
+            const batchScreenshotOptions = result.reduce<ScreenshotOption[]>((acc, cur, i) => {
                 const d = cur.data;
                 
                 const part = (Object.keys(d) as Array<keyof typeof d>).map(k => {
@@ -403,16 +416,26 @@ router.post('/screenshots', async (ctx, next) => {
                         const filepath = path.join(folder, `${cur.name}_${k}.png`);
     
                         return {
+                            songName: cur.name,
+                            artistName: cur.artist,
+                            albumName: cur.album,
                             url,
                             path: filepath,
-                            channel: k,
+                            channel: k as string,
                             taskGroup: filename,
                         };
+                    } else {
+                        d[k] || failedList.push({
+                            songName: list[i].songName,
+                            artistName: list[i].artistName,
+                            albumName: list[i].albumName,
+                            channel: k,
+                        });
                     }
-                }).filter((v): v is {
-                    url: string,
-                    path: string,
-                    channel: keyof typeof d,
+                }).filter((v): v is ScreenshotOption & {
+                    songName: string,
+                    artistName: string,
+                    albumName: string,
                     taskGroup: string,
                 } => !!v);
     
@@ -421,7 +444,43 @@ router.post('/screenshots', async (ctx, next) => {
                 return acc;
             }, []);
 
-            await ctx.service.batchScreenshot(batchScreenshotOptions);
+            const screenshotsResult = await ctx.service.batchScreenshot(batchScreenshotOptions);
+
+            const resultList = screenshotsResult.reduce<{
+                success: string,
+                songName: string,
+                artistName: string,
+                albumName: string,
+                channel: string,
+                url: string,
+            }[]>((acc, cur, i) => {
+                const track = {
+                    success: cur ? '成功': '截图失败',
+                    songName: batchScreenshotOptions[i].songName,
+                    artistName: batchScreenshotOptions[i].artistName,
+                    albumName: batchScreenshotOptions[i].albumName,
+                    channel: batchScreenshotOptions[i].channel,
+                    url: batchScreenshotOptions[i].url,
+                };
+
+                acc.push(track);
+
+                return acc;
+            }, []).concat(failedList.map((v): any => {
+                v.success = '查询失败';
+                return v;
+            }));
+
+            const report = list2csv(resultList, new Map([
+                ['success', '是否成功'],
+                ['songName', '歌曲名'],
+                ['artistName', '歌手名'],
+                ['albumName', '专辑名'],
+                ['channel', '平台'],
+                ['url', '链接'],
+            ]));
+
+            await ctx.service.cacheCSV(report, path.join(folder, `report.csv`));
 
             await ctx.service.cacheFile(filename, folder);
 

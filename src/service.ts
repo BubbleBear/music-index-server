@@ -323,6 +323,7 @@ export default class Service {
                     return {
                         name: option.songName,
                         artist: option.artistName,
+                        album: option.albumName,
                         data: status ? await this.searchTrack(option) : {},
                     };
                 });
@@ -348,24 +349,29 @@ export default class Service {
         const bestMatches = (Object.keys(results) as Array<keyof typeof results>).reduce((acc, cur) => {
             if (results[cur] !== null) {
                 acc[cur] = results[cur]!.filter((v) => {
+                    switch (cur) {
+                        case 'youtube': {
+                            return normalizeString(v.name).includes(normalizeString(songName))
+                                && (
+                                    normalizeString(v.name).includes(normalizeString(artistName))
+                                    || v.artists.reduce((acc: boolean, cur) => {
 
-                    // return normalizeString(v.name).includes(normalizeString(songName))
-                    //     && (
-                    //         normalizeString(v.name).includes(normalizeString(artistName))
-                    //         || v.artists.reduce((acc: boolean, cur) => {
+                                        return acc || normalizeString(cur.name).includes(normalizeString(artistName));
+                                    }, false)
+                                    || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`))
+                                );
+                        }
+                        default: {
+                            return normalizeString(v.name) == normalizeString(songName)
+                                && (
+                                    v.artists.reduce((acc: boolean, cur) => {
 
-                    //             return acc || normalizeString(cur.name).includes(normalizeString(artistName));
-                    //         }, false)
-                    //         || albumName && v.album.name && normalizeString(v.album.name).includes(normalizeString(`${albumName}`))
-                    //     );
-                    return normalizeString(v.name) == normalizeString(songName)
-                        && (
-                            v.artists.reduce((acc: boolean, cur) => {
-
-                                return acc || normalizeString(cur.name) == normalizeString(artistName);
-                            }, false)
-                            || albumName && v.album.name && normalizeString(v.album.name) == normalizeString(`${albumName}`)
-                        );
+                                        return acc || normalizeString(cur.name) == normalizeString(artistName);
+                                    }, false)
+                                    || albumName && v.album.name && normalizeString(v.album.name) == normalizeString(`${albumName}`)
+                                );
+                        }
+                    }
                 })[0] || {};
             } else {
                 acc[cur] = null;
@@ -518,13 +524,13 @@ export default class Service {
         return typeMap;
     }
 
-    public async cacheCSV(content: string, filepath: string, redisKey: string, expire: number = 76800) {
+    public async cacheCSV(content: string, filepath: string, redisKey?: string, expire: number = 76800) {
         const ws = fs.createWriteStream(filepath);
         ws.write('\ufeff');
         ws.write(content);
         ws.end();
 
-        await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
+        redisKey && await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
 
     public async listDownloadingFiles() {
@@ -607,23 +613,26 @@ export default class Service {
         path: string,
         channel: string,
     }) {
-        await this.gatherer.screenshot(url, path, channel);
+        const success = await this.gatherer.screenshot(url, path, channel);
 
         global.info({
             module: 'main',
             desc: 'screenshot',
+            success,
             url,
             path,
             channel,
             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
         });
         console.log('screenshot: ', path, '#########', channel);
+
+        return success;
     }
 
     public async batchScreenshot(options: {
         url: string, path: string, channel: string, taskGroup: number | string
     }[]) {
-        await Promise.all(
+        return await Promise.all(
             options.map((option) => {
                 return screenshotLimit(async () => {
                     const status = 

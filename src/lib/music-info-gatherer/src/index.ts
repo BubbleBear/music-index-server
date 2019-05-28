@@ -386,6 +386,8 @@ export class Gatherer {
                 time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                 errors,
             });
+
+            return false;
         }
 
         if (page) {
@@ -406,6 +408,8 @@ export class Gatherer {
                 });
             }
         }
+
+        return true;
     }
 }
 
