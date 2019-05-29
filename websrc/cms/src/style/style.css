@@ -50,7 +50,7 @@ html {
       justify-content: space-around
     }
 
-    .column-warp {
+    .column-wrap {
       flex-direction: column;
     }
 
@@ -121,17 +121,17 @@ html {
       border: 1px #cdcdcd solid;
     }
 
-    .table-warp {
+    .table-wrap {
       padding-top: 0 !important;
     }
 
-    .table-warp .song-name {
+    .table-wrap .song-name {
       font-size: 18px;
       color: #333;
       font-weight: bold;
     }
 
-    .table-warp .author {
+    .table-wrap .author {
       font-size: 14px;
       color: #999;
     }
@@ -168,7 +168,7 @@ html {
       font-weight: bold;
     }
 
-    .table .index-warp li {
+    .table .index-wrap li {
       border-left: none;
     }
 
@@ -180,7 +180,7 @@ html {
       margin: 0 auto;
     }
 
-    .operation-warp {
+    .operation-wrap {
       /* border-left: #9f9f9f 1px solid; */
     }
 

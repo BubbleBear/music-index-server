@@ -28,7 +28,7 @@
     </div>
   </div>
   <header>单曲查询</header>
-  <div class="main-wrap column-warp">
+  <div class="main-wrap column-wrap">
     <div>
       <div>
         <div class="input-wrap">
@@ -47,11 +47,11 @@
       </div>
       <button id="single-track" class="download" @click="getTrack">查询</button>
     </div>
-    <div id="track-list-warp" class="table-warp" v-if="showTrackList">
+    <div id="track-list-wrap" class="table-wrap" v-if="showTrackList">
       <div class="song-name" id="song-name-data" style="text-align:center" v-text="trackListInfo.songName"></div>
       <div class="author" id="artist-name-data" style="text-align:center" v-text="trackListInfo.artistName"></div>
       <div class="table" id="track-list" style="width:600px;">
-        <ul class="index-warp">
+        <ul class="index-wrap">
           <li class="table-title">
           </li>
           <li>是否存在</li>
@@ -66,8 +66,8 @@
 
     </div>
   </div>
-  <div class="model-warp">
-    <div class="title">按公司ID创建查询任务</div>
+  <div class="model-wrap">
+    <div class="title" style="height:40px;line-height: 40px">按公司ID创建查询任务</div>
     <div class="main-wrap">
       <div>
         <div>
@@ -78,7 +78,7 @@
         </div>
         <button id="create-track" class="download" @click="createTask">创建查询任务</button>
       </div>
-      <div class="common-list-warp">
+      <div class="common-list-wrap">
         <div class="title" id="downloading-count">正在进行的查询总数：{{downloadingList.length}}</div>
         <div class="table" v-if="downloadingList.length" id="downloading-table">
           <ul v-for="(row,index) in downloadingListKeyLabel" :key="index">
@@ -95,7 +95,7 @@
   <div class="tip" id="file-list-count"
     style="text-align: center;font-size: 14px;color:#999;height:28px;line-height:28px;padding-bottom:10px">总数：{{companyTracks.length}}</div>
   <div style="padding-top:0;" class="main-wrap">
-    <div class="common-list-warp " style="padding-top:0" >
+    <div class="common-list-wrap " style="padding-top:0" >
       <div class="table" v-if="companyTracks.length" id="file-list" style="width:auto">
         <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" :class="row.className">
           <li class="table-title" v-text="row.label" :style="index === 0 && 'border-left: none'" ></li>
@@ -108,28 +108,22 @@
     </div>
   </div>
   </div>
-  <div class="model-warp">
-    <div class="title" style="height:40px;line-height: 40px">根据文件创建查询</div>
+
+  <div class="model-wrap">
+    <div class="title" style="height:40px;line-height: 40px">上传歌单自动查询截图</div>
     <div class="main-wrap">
       <div class="upload-model-wrap">
-          <div class="upload-btn-wrap">
-            <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
-              xmlns="http://www.w3.org/2000/svg">
-              <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
-            <span class="tip">点击上传csv查询文件</span>
-            <input type="file" @change="uploadCsv" accept=".csv" id="config-upload">
-          </div>
-        <div class="upload-btn-wrap" style="margin-top: 10px">
+        <div class="upload-btn-wrap">
           <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
             xmlns="http://www.w3.org/2000/svg">
-          <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
-          <span class="tip">点击上传地理位置追加文件</span>
-          <input type="file" @change="uploadLocationCsv" accept=".csv" id="config-upload">
+            <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
+          <span class="tip">点击上传csv查询文件</span>
+          <input type="file" @change="uploadCsv" accept=".csv" id="config-upload">
         </div>
         <div class="tip">请上传和开发人员确定的文件格式</div>
       </div>
-      <div class="common-list-warp">
-        <div class="title" id="downloading-count">正在进行的csv查询总数：{{csvDownloadingList.length}}</div>
+      <div class="common-list-wrap">
+        <div class="title" id="downloading-count">正在进行的歌单自动查询截图总数：{{csvDownloadingList.length}}</div>
         <div class="table" v-if="csvDownloadingList.length" id="downloading-table" style="width:auto">
           <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" v-if="!row.hide">
             <li class="table-title" v-text="row.showSubLabel ? row.subLabel :row.label" :style="index === 0 && 'border-left: none'" ></li>
@@ -141,11 +135,11 @@
         </div>
       </div>
     </div>
-      <div class="title" style="height:40px;line-height: 40px">已完成文件列表</div>
+      <div class="title" style="height:40px;line-height: 40px">已完成歌单自动查询截图列表</div>
       <div class="tip" id="file-list-count"
         style="text-align: center;font-size: 14px;color:#999;height:28px;line-height:28px;padding-bottom:10px">总数：{{customScreenshots.length}}</div>
       <div style="padding-top:0;" class="main-wrap">
-        <div class="common-list-warp " style="padding-top:0" >
+        <div class="common-list-wrap " style="padding-top:0" >
           <div class="table" v-if="customScreenshots.length" id="file-list" style="width:auto">
             <ul v-for="(row,index) in downloadingListKeyLabel" :key="index" v-if="row.key!=='companyName'" :class="row.className" >
               <li class="table-title" v-text="row.showSubLabel ? row.subLabel :row.label" :style="index === 0 && 'border-left: none'" ></li>
@@ -158,9 +152,25 @@
         </div>
       </div>
   </div>
-  <div class="config-wrap">
-    <div class="title" style="text-align: center">基础配置</div>
+  
+  <div class="model-wrap">
+    <div class="title" style="height:40px;line-height: 40px">地理信息追加</div>
+    <div class="main-wrap">
+      <div class="upload-model-wrap">
+        <div class="upload-btn-wrap" style="margin-top: 10px">
+          <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
+            xmlns="http://www.w3.org/2000/svg">
+          <path fill="#333333" d="M1024 409.6H614.4V0H409.6v409.6H0v204.8h409.6v409.6h204.8V614.4h409.6z" /></svg>
+          <span class="tip">点击上传地理信息追加文件</span>
+          <input type="file" @change="uploadLocationCsv" accept=".csv" id="config-upload">
+        </div>
+        <div class="tip">请上传和开发人员确定的文件格式</div>
+      </div>
+    </div>
+  </div>
 
+  <div class="model-wrap">
+    <div class="title" style="height:40px;line-height: 40px">基础配置</div>
     <div class="upload-btn-wrap">
       <svg class="icon" width="200px" height="200.00px" viewBox="0 0 1024 1024" version="1.1"
         xmlns="http://www.w3.org/2000/svg">
@@ -227,11 +237,11 @@ export default {
       trackListInfo: {songName: '', artistName: ''},
       downloadingList: [],
       downloadingListKeyLabel: [
-        {label: '序号', key: 'index', className: 'index-warp'},
-        {label: '公司ID', key: 'filename', subLabel: '文件名', className: 'id-warp', showSubLabel: true},
-        {label: '公司名称', key: 'companyName', className: 'id-warp', hide: true},
-        {label: '状态', key: 'status', className: 'status-warp'},
-        {label: '操作', className: 'other-warp'}
+        {label: '序号', key: 'index', className: 'index-wrap'},
+        {label: '公司ID', key: 'filename', subLabel: '文件名', className: 'id-wrap', showSubLabel: true},
+        {label: '公司名称', key: 'companyName', className: 'id-wrap', hide: true},
+        {label: '状态', key: 'status', className: 'status-wrap'},
+        {label: '操作', className: 'other-wrap'}
       ],
       completeCompanyList: [],
       companyId: '',
@@ -412,7 +422,7 @@ export default {
 </script>
 <style lang="stylus" scoped>
 #index {
-  .model-warp {
+  .model-wrap {
     padding-top 10px
     border-top 1px solid #f0f0f0
   }

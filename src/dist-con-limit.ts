@@ -3,8 +3,6 @@ import subscriber from './connection/subscriber';
 
 const REDIS_PREFIX = 'dist-con-limit:';
 
-let DEBUG = false;
-
 export async function atom(domain: string, fn: (...args: any) => Promise<any>) {
     const ATOM_DOMAIN = `${REDIS_PREFIX}atom:${domain}`;
     const lock = await redis.setnx(ATOM_DOMAIN, true);
@@ -51,7 +49,7 @@ export default function wrapper(concurrency: number, domain: string) {
 
     subscriber.on('message', async (channel, message) => {
         if (channel === REDIS_DOMAIN && message === 'decr') {
-            DEBUG && console.log(await count(), queue.length);
+            // console.log(await count(), queue.length);
             if (queue.length > 0 && await count() < concurrency) {
                 await schedule();
             }
