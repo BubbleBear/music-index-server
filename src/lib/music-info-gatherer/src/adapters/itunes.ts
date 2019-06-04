@@ -39,6 +39,7 @@ export default class ItunesAdapter extends AbstractAdapter {
                 album: {
                     name: v.collectionName,
                 },
+                url: v.url,
             };
         });
 
