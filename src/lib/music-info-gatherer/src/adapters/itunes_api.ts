@@ -12,44 +12,36 @@ export default class ItunesAdapter extends AbstractAdapter {
         return await axios({
             method,
             url,
-            baseURL: 'https://search.itunes.apple.com',
+            baseURL: 'https://itunes.apple.com',
             httpsAgent: new ProxyAgent(this.proxy),
-            headers: {
-                'x-apple-store-front': '143465-19,32 t:music31',
-            },
             timeout: 30000,
         });
     }
 
     public async search(options: SearchOptions) {
-        const response = await this.fetch({ url: `/WebObjects/MZStore.woa/wa/search?os=12.0&term=${encodeURIComponent(options.songName + ' ' + options.artistName)}&lyrics=` });
+        const response = await this.fetch({ url: `/search?term=${encodeURIComponent(options.songName)}&contry=CN&media=music&attribute=songTerm&limit=10lang=zh_cn` });
 
-        const resultObject = response.data.storePlatformData.lockup.results;
-
-        const result = Object.keys(resultObject).map(key => {
-            const v = resultObject[key];
-
+        return response.data.results.map((v: any) => {
             return {
-                name: v.name,
+                name: v.trackName,
                 artists: [
                     {
                         name: v.artistName,
-                    }
+                    },
                 ],
                 album: {
                     name: v.collectionName,
                 },
+                url: v.trackViewUrl.replace(/\/us\//g, '/cn/'),
             };
         });
-
-        return result;
     }
 }
 
 if (require.main === module) {
     !async function() {
         const a = new ItunesAdapter();
-        const r = await a.search({ songName: '江南', artistName: '林俊杰' });
+        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
 
         console.dir(r, {
             depth: null,
