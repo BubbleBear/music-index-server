@@ -350,6 +350,16 @@ export default class Service {
             if (results[cur] !== null) {
                 acc[cur] = results[cur]!.filter((v) => {
                     switch (cur) {
+                        case 'itunes': {
+                            return normalizeString(v.name) == normalizeString(songName)
+                                && (
+                                    v.artists.reduce((acc: boolean, cur) => {
+
+                                        return acc || normalizeString(cur.name) == normalizeString(artistName);
+                                    }, false)
+                                    || albumName && v.album.name && normalizeString(v.album.name).replace(/\ -\ single$/ig, '') == normalizeString(`${albumName}`)
+                                );
+                        }
                         case 'youtube': {
                             return normalizeString(v.name).includes(normalizeString(songName))
                                 && (
