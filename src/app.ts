@@ -7,6 +7,7 @@ import serve from 'koa-static';
 import cors from '@koa/cors';
 import axios from 'axios';
 
+import exceptionCatcher from './middleware/exception-catch';
 import Service from './service';
 import router from './router';
 import { info, warn, error } from './logger';
@@ -31,6 +32,7 @@ Object.defineProperty(app.context, 'service', {
 });
 
 app
+    .use(exceptionCatcher())
     .use(cors())
     .use(serve(path.join(__dirname, '../public')))
     .use(bodyparser({
