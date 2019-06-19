@@ -24,7 +24,9 @@ export default class ItunesAdapter extends AbstractAdapter {
     public async search(options: SearchOptions) {
         const response = await this.fetch({ url: `/WebObjects/MZStore.woa/wa/search?os=12.0&term=${encodeURIComponent(options.songName + ' ' + options.artistName)}&lyrics=` });
 
-        const resultObject = response.data.storePlatformData.lockup.results;
+        const resultObject = response.data.storePlatformData.lockup
+            && response.data.storePlatformData.lockup.results
+            || {};
 
         const result = Object.keys(resultObject).map(key => {
             const v = resultObject[key];
@@ -49,8 +51,10 @@ export default class ItunesAdapter extends AbstractAdapter {
 
 if (require.main === module) {
     !async function() {
-        const a = new ItunesAdapter();
-        const r = await a.search({ songName: '江南', artistName: '林俊杰' });
+        const a = new ItunesAdapter({
+            proxy: 'socks://127.0.0.1:7777',
+        });
+        const r = await a.search({ songName: 'fa~!#!@sd4231', artistName: '王1234宇4123鹏' });
 
         console.dir(r, {
             depth: null,

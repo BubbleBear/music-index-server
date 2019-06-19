@@ -37,7 +37,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 
         const response = await this.fetch({ url: '/weapi/cloudsearch/get/web?csrf_token=', data: postDataStr});
 
-        const results = response.data.result.songs.map(async (v: any) => {
+        const results = (response.data.result.songs || []).map(async (v: any) => {
             return {
                 name: v.name,
                 artists: v.ar.map((u: any) => {
@@ -79,7 +79,7 @@ export default class NeteaseMusicAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function () {
         const a = new NeteaseMusicAdapter({ proxy: undefined });
-        const r = await a.search({ songName: '一直这样吧', artistName: '王宇鹏' });
+        const r = await a.search({ songName: 'fa~!#!@sd4231', artistName: '王1234宇4123鹏' });
         console.dir(r, {
             depth: 4,
         })

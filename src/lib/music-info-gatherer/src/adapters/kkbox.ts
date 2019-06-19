@@ -56,7 +56,7 @@ if (require.main === module) {
         const a = new KkboxAdapter({
             proxy: 'http://127.0.0.1:6666',
         });
-        const r = await a.search({ songName: '好心分手', artistName: '卢巧音' });
+        const r = await a.search({ songName: 'fa~!#!@sd4231', artistName: '王1234宇4123鹏' });
         console.dir(r, {
             depth: null,
         });

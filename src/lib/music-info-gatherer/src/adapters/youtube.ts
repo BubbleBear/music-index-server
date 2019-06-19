@@ -63,7 +63,7 @@ if (require.main === module) {
         const a = new YoutubeAdapter({
             proxy: 'socks://127.0.0.1:7780',
         });
-        const r = await a.search({ songName: '爱若', artistName: '陈粒' });
+        const r = await a.search({ songName: 'fa~!#!@sd4231', artistName: '王1234宇4123鹏' });
         console.dir(r, {
             depth: 4,
         })
