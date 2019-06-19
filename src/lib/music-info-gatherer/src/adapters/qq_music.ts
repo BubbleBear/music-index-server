@@ -59,7 +59,7 @@ export default class QQMusicAdapter extends AbstractAdapter {
 if (require.main === module) {
     !async function() {
         const a = new QQMusicAdapter();
-        const r = await a.search({ songName: 'fa~!#!@sd4231', artistName: '王1234宇4123鹏' });
+        const r = await a.search({ songName: '微笑说离开', artistName: '马旭东' });
 
         console.dir(r, {
             depth: null,

@@ -361,6 +361,10 @@ export default class Service {
                                 );
                         }
                         case 'youtube': {
+                            if (v.name == undefined) {
+                                return false;
+                            }
+
                             return normalizeString(v.name).includes(normalizeString(songName))
                                 && (
                                     normalizeString(v.name).includes(normalizeString(artistName))
