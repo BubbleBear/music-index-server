@@ -544,7 +544,9 @@ export default class Service {
         ws.write(content);
         ws.end();
 
-        redisKey && await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
+        redisKey
+            && await redis.hdel(REDIS_CACHED_FILE_MAP, redisKey)
+            && await redis.hset(REDIS_CACHED_FILE_MAP, redisKey, filepath);
     }
 
     public async listDownloadingFiles() {
