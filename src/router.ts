@@ -256,7 +256,7 @@ router.get('/get_tracks', async (ctx, next) => {
 
     const tracks = embeded.reduce((tacc, company) => {
         const albums = company.albumList.reduce((aacc: any, album: any) => {
-            if (album.list && Array.isArray(album.list)) {
+            if (album && album.list && Array.isArray(album.list)) {
                 const tr = album.list.map((track: any) => {
                     const s = track.singer[0];
     
