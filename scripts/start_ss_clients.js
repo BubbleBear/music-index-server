@@ -66,6 +66,7 @@ async function start(startPort = 7777) {
                             module: 'scripts/ss',
                             time: moment().format('YYYY-MM-DD HH:mm:ss SSS'),
                             desc: 'ss error output',
+                            command,
                             message: chunk && chunk.toString() || '',
                         });
 
