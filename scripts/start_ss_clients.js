@@ -5,7 +5,7 @@ const moment = require('moment');
 
 const logger = require('./logger');
 
-const REDIS_CONFIG_KEY = 'music-index.config';
+const REDIS_CONFIG_KEY = 'music-index:config';
 
 const clientProsessPool = [];
 
