@@ -37,7 +37,7 @@
     "koa-static": "^5.0.0",
     "lazy-await": "^1.0.1",
     "list2csv": "^1.0.1",
-    "moment": "^2.24.0",
+    "moment": "^2.29.4",
     "mongodb": "^3.2.2",
     "p-limit": "^2.2.0",
     "proxy-agent": "^3.1.0",
